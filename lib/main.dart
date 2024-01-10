@@ -3,7 +3,6 @@ import 'dart:developer' as developer;
 import 'package:intl/intl.dart';
 import 'package:forex_conversion/forex_conversion.dart';
 import 'package:provider/provider.dart';
-import 'package:currency_app/constants.dart';
 
 import 'widgets/currency_search.dart';
 import 'widgets/item.dart';

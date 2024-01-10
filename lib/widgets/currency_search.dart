@@ -1,6 +1,7 @@
 import 'package:currency_app/constants.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+
+import 'scroll_bar.dart';
 
 class CurrencySearch extends SearchDelegate<String> {
   @override
@@ -21,52 +22,55 @@ class CurrencySearch extends SearchDelegate<String> {
   }
 
   Widget buildListDuringQuery(BuildContext context, List<String> matchQuery) {
-    return ListView.builder(
-      itemCount: matchQuery.length,
-      itemBuilder: (context, index) {
-        return buildCurrencyTile(
-            context,
-            matchQuery[index],
-            worldCurrencies[matchQuery[index]]['name'],
-            worldCurrencies[matchQuery[index]]['symbol']);
-      },
-    );
+    return const Placeholder();
+    // return ListView.builder(
+    //   itemCount: matchQuery.length,
+    //   itemBuilder: (context, index) {
+    //     return buildCurrencyTile(
+    //         context,
+    //         matchQuery[index],
+    //         worldCurrencies[matchQuery[index]]['name'],
+    //         worldCurrencies[matchQuery[index]]['symbol']);
+    //   },
+    // );
   }
 
   Widget buildListStart(BuildContext context, List<String> matchQuery) {
     matchQuery.insert(0, 'USD');
 
     ScrollController scrollController = ScrollController();
-    List<GlobalKey> sectionKeys = List.generate(27, (index) => GlobalKey());
+    List<GlobalKey> sectionKeys =
+        List.generate(mapSectionToKey.length, (index) => GlobalKey());
 
-    return Row(
+    return Stack(
       children: <Widget>[
-        Expanded(
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           child: SingleChildScrollView(
             controller: scrollController,
             child: Column(
               children: <Widget>[
                 for (var i = 0; i < matchQuery.length; i++) ...[
-                  buildCurrencyTile(
-                    context,
-                    matchQuery[i],
-                    worldCurrencies[matchQuery[i]]['name'],
-                    worldCurrencies[matchQuery[i]]['symbol'],
-                  ),
                   if (i == 0)
                     Column(
                       children: <Widget>[
+                        Container(key: sectionKeys[mapSectionToKey['-']!]),
+                        buildCurrencyTile(
+                            context, 'USD', 'United States Dollar', '\$'),
                         const Divider(color: Colors.lightBlue),
                         const SizedBox(height: 4),
-                        const Divider(color: Colors.black),
-                        Row(
+                        Divider(
                             key: sectionKeys[mapSectionToKey['*']!],
-                            children: const [
-                              SizedBox(width: 8),
-                              Icon(Icons.star),
-                              Text('POPULAR',
-                                  style: TextStyle(fontWeight: FontWeight.bold))
-                            ]),
+                            color: Colors.black),
+                        const Row(children: [
+                          SizedBox(width: 8),
+                          Icon(Icons.star),
+                          Text('POPULAR',
+                              style: TextStyle(fontWeight: FontWeight.bold))
+                        ]),
                         const Divider(color: Colors.black),
                         for (var i = 0; i < popularCurrencies.length; i++) ...[
                           buildCurrencyTile(
@@ -87,6 +91,12 @@ class CurrencySearch extends SearchDelegate<String> {
                                 matchQuery[i + 1][0].toUpperCase()]!]),
                       ],
                     ),
+                  buildCurrencyTile(
+                    context,
+                    matchQuery[i],
+                    worldCurrencies[matchQuery[i]]['name'],
+                    worldCurrencies[matchQuery[i]]['symbol'],
+                  ),
                   if ((i != 0) &&
                       (i < matchQuery.length - 1 &&
                           matchQuery[i][0].toUpperCase() !=
@@ -107,16 +117,21 @@ class CurrencySearch extends SearchDelegate<String> {
             ),
           ),
         ),
-        Column(
-          children: <Widget>[
-            Expanded(
-              child: _MyWidget(sectionKeys: sectionKeys),
-            ),
-            Expanded(
-              child: Container(), // This is your spacer
-            ),
-          ],
-        )
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ScrollBar(sectionKeys: sectionKeys),
+              Flexible(
+                fit: FlexFit.loose,
+                child: Container(), // This is your spacer
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -127,8 +142,8 @@ class CurrencySearch extends SearchDelegate<String> {
       children: <Widget>[
         const Divider(color: Colors.lightBlue),
         const SizedBox(height: 4),
-        const Divider(color: Colors.black),
-        Row(key: sectionKey, children: [
+        Divider(key: sectionKey, color: Colors.black),
+        Row(children: [
           const SizedBox(width: 8),
           Text(
             matchQuery[index + 1][0].toUpperCase(),
@@ -148,7 +163,8 @@ class CurrencySearch extends SearchDelegate<String> {
       },
       title: Row(
         children: <Widget>[
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             child: Text.rich(
               TextSpan(
                 children: <TextSpan>[
@@ -196,92 +212,5 @@ class CurrencySearch extends SearchDelegate<String> {
               .map((entry) => entry.key)
               .toList());
     }
-  }
-}
-
-class _MyWidget extends StatefulWidget {
-  final List<GlobalKey> sectionKeys;
-
-  const _MyWidget({required this.sectionKeys});
-
-  @override
-  _MyWidgetState createState() => _MyWidgetState();
-}
-
-class _MyWidgetState extends State<_MyWidget> {
-  Color _backgroundColor = const Color.fromARGB(255, 124, 124, 124);
-  int _selectedIndex = -1;
-
-  void _onPointerDown(PointerDownEvent details) {
-    setState(() {
-      _backgroundColor = Colors.lightBlue;
-    });
-  }
-
-  void _onPointerUp(PointerUpEvent details) {
-    setState(() {
-      _backgroundColor = const Color.fromARGB(255, 124, 124, 124);
-    });
-  }
-
-  int calculateIndex(Offset globalPosition) {
-    RenderBox box = context.findRenderObject() as RenderBox;
-    Offset localPosition = box.globalToLocal(globalPosition);
-    double itemHeight = box.size.height / widget.sectionKeys.length;
-    return (localPosition.dy ~/ itemHeight)
-        .clamp(0, widget.sectionKeys.length - 1);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: _onPointerDown,
-      onPointerUp: _onPointerUp,
-      child: SizedBox(
-        width: 20,
-        child: Container(
-          child: GestureDetector(
-            onVerticalDragUpdate: (DragUpdateDetails details) async {
-              int index = calculateIndex(details.globalPosition);
-              await Scrollable.ensureVisible(
-                widget.sectionKeys[index].currentContext!,
-              );
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            onVerticalDragEnd: (DragEndDetails details) {
-              setState(() {
-                _selectedIndex = -1;
-              });
-            },
-            child: ListView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: widget.sectionKeys.length,
-              itemBuilder: (context, index) {
-                return LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    return Container(
-                      color: index == _selectedIndex
-                          ? Colors.red
-                          : _backgroundColor,
-                      child: Center(
-                        child: Container(
-                          child: Text(
-                            mapSectionToKey.keys.elementAt(index),
-                            style: const TextStyle(
-                                fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
