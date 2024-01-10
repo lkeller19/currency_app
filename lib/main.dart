@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
-import 'package:intl/intl.dart';
-import 'package:forex_conversion/forex_conversion.dart';
 import 'package:provider/provider.dart';
 
+import 'my_app_state.dart';
 import 'widgets/currency_search.dart';
 import 'widgets/item.dart';
 
@@ -29,92 +28,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyAppState extends ChangeNotifier {
-  double conversionRate = 0;
-  int factor = 1;
-  List<Item> data = [];
-
-  MyAppState() {
-    data = generateItems(10);
-    fetchExchangeRate();
-  }
-
-  String lastUpdated = '';
-  var formatter = DateFormat('E, MMM d, h:mm a');
-
-  String currency1 = 'USD';
-  String currency2 = 'EUR';
-
-  void swap() {
-    var temp = currency1;
-    currency1 = currency2;
-    currency2 = temp;
-    conversionRate = double.parse((1 / conversionRate).toStringAsFixed(6));
-    notifyListeners();
-  }
-
-  void setCurrency1(String currency) {
-    currency1 = currency;
-    fetchExchangeRate();
-    notifyListeners();
-  }
-
-  void setCurrency2(String currency) {
-    currency2 = currency;
-    fetchExchangeRate();
-    notifyListeners();
-  }
-
-  List<Item> generateItems(int numberOfItems) {
-    return List<Item>.generate(numberOfItems, (int index) {
-      return Item(
-        headerValue: (index + 1) * factor,
-        expandedValue: (index + 1) * factor,
-      );
-    });
-  }
-
-  void increaseFactor() {
-    factor *= 10;
-    data = generateItems(10);
-    notifyListeners();
-  }
-
-  void decreaseFactor() {
-    if (factor > 1) {
-      // Prevent factor from going below 1
-      factor ~/= 10;
-      developer.log(factor.toString());
-      data = generateItems(10);
-    }
-    notifyListeners();
-  }
-
-  Future<void> fetchExchangeRate() async {
-    final fx = Forex();
-    var rate = await fx.getCurrencyConverted(
-        sourceCurrency: currency1,
-        destinationCurrency: currency2,
-        numberOfDecimals: 6);
-
-    conversionRate = rate;
-    lastUpdated = formatter.format(DateTime.now());
-    notifyListeners();
-
-    // final response = await http.get(Uri.parse(
-    //     'https://v6.exchangerate-api.com/v6/*****/latest/USD'));
-
-    // if (response.statusCode == 200) {
-    //   setState(() {
-    //     // conversionRate = jsonDecode(response.body)['conversion_rates']['EUR'];
-    //     lastUpdated = formatter.format(DateTime.now());
-    //   });
-    // } else {
-    //   throw Exception('Failed to load exchange rate');
-    // }
-  }
-}
-
 class _CurrencyConverterBase extends StatefulWidget {
   const _CurrencyConverterBase();
 
@@ -123,6 +36,8 @@ class _CurrencyConverterBase extends StatefulWidget {
 }
 
 class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
+  bool _swipeActionPerformed = false;
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -130,7 +45,9 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
     Future<void> displaySearch(int currency) async {
       final selected = await showSearch<String>(
         context: context,
-        delegate: CurrencySearch(),
+        delegate: CurrencySearch(
+            hintText:
+                'Search (${(currency == 1) ? '? --> ${appState.currency2}' : '${appState.currency1} --> ?'})'),
       );
       if (selected != null && selected.isNotEmpty) {
         currency == 1
@@ -150,36 +67,65 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
               else
                 SizedBox(
                   height: MediaQuery.of(context).size.height / 11,
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        TextButton(
-                          onPressed: () {
-                            bottomModal(
-                                context,
-                                appState.currency1,
-                                appState.currency2,
-                                appState.conversionRate,
-                                appState.lastUpdated,
-                                appState.swap,
-                                appState.setCurrency1,
-                                appState.setCurrency2,
-                                displaySearch,
-                                1);
-                          },
-                          child: Text(
-                            appState.currency1,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                  child: GestureDetector(
+                    onHorizontalDragUpdate: (DragUpdateDetails details) {
+                      if (!_swipeActionPerformed &&
+                          (details.delta.dx > 0 || details.delta.dx < 0)) {
+                        appState.swap();
+                        _swipeActionPerformed = true;
+                      }
+                    },
+                    onHorizontalDragEnd: (DragEndDetails details) {
+                      _swipeActionPerformed = false;
+                    },
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          TextButton(
+                            onPressed: () {
+                              bottomModal(
+                                  context,
+                                  appState.currency1,
+                                  appState.currency2,
+                                  appState.conversionRate,
+                                  appState.lastUpdated,
+                                  appState.swap,
+                                  appState.setCurrency1,
+                                  appState.setCurrency2,
+                                  displaySearch,
+                                  1);
+                            },
+                            child: Text(
+                              appState.currency1,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
-                        ),
-                        const SizedBox(
-                          width: 8,
-                        ),
-                        Text(
-                          appState.currency2,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ]),
+                          const SizedBox(
+                            width: 8,
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              bottomModal(
+                                  context,
+                                  appState.currency1,
+                                  appState.currency2,
+                                  appState.conversionRate,
+                                  appState.lastUpdated,
+                                  appState.swap,
+                                  appState.setCurrency1,
+                                  appState.setCurrency2,
+                                  displaySearch,
+                                  2);
+                            },
+                            child: Text(
+                              appState.currency2,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ]),
+                  ),
                 ),
               ExpansionPanelList.radio(
                 expansionCallback: (int index, bool isExpanded) {
@@ -219,26 +165,26 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
           ),
         ),
       ),
-      floatingActionButton: Row(
-        // Wrap the FloatingActionButtons in a Row
-        mainAxisAlignment:
-            MainAxisAlignment.end, // Align the buttons to the end
-        children: <Widget>[
-          FloatingActionButton(
-            onPressed: appState.decreaseFactor,
-            heroTag: 'decrease',
-            tooltip: 'Decrease',
-            child: const Icon(Icons.remove),
-          ),
-          const SizedBox(width: 10), // Add some space between the buttons
-          FloatingActionButton(
-            onPressed: appState.increaseFactor, // Update the onPressed handler
-            heroTag: 'increase',
-            tooltip: 'Increase',
-            child: const Icon(Icons.add),
-          ),
-        ],
-      ),
+      // floatingActionButton: Row(
+      //   // Wrap the FloatingActionButtons in a Row
+      //   mainAxisAlignment:
+      //       MainAxisAlignment.end, // Align the buttons to the end
+      //   children: <Widget>[
+      //     FloatingActionButton(
+      //       onPressed: appState.decreaseFactor,
+      //       heroTag: 'decrease',
+      //       tooltip: 'Decrease',
+      //       child: const Icon(Icons.remove),
+      //     ),
+      //     const SizedBox(width: 10), // Add some space between the buttons
+      //     FloatingActionButton(
+      //       onPressed: appState.increaseFactor, // Update the onPressed handler
+      //       heroTag: 'increase',
+      //       tooltip: 'Increase',
+      //       child: const Icon(Icons.add),
+      //     ),
+      //   ],
+      // ),
     );
   }
 

@@ -4,41 +4,77 @@ import 'package:flutter/material.dart';
 import 'scroll_bar.dart';
 
 class CurrencySearch extends SearchDelegate<String> {
+  Widget? listStartWidget;
+
+  CurrencySearch({String hintText = "Search"})
+      : super(
+          searchFieldLabel: hintText,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.search,
+          searchFieldDecorationTheme: InputDecorationTheme(
+            fillColor: Colors.grey[200], // Background color
+            filled: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50), // Rounded edges
+              borderSide: BorderSide.none,
+            ),
+          ),
+        );
+
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
-      TextButton(
-        child: const Text('Cancel'),
-        onPressed: () {
-          close(context, '');
-        },
+      Padding(
+        padding: const EdgeInsets.only(right: 16.0),
+        child: Opacity(
+            opacity: query.isEmpty ? 0.0 : 1.0,
+            child: CircleAvatar(
+              backgroundColor: Colors.grey[200], // Same color as the search bar
+              child: IconButton(
+                icon: const Icon(Icons.clear),
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  if (query.isEmpty) {
+                    return;
+                  }
+                  query = '';
+                },
+              ),
+            )),
       ),
     ];
   }
 
   @override
   Widget buildLeading(BuildContext context) {
-    return Container();
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0),
+      child: IconButton(
+        icon: const Icon(Icons.arrow_back), // Back icon
+        onPressed: () {
+          close(context, ''); // Close the search delegate
+        },
+      ),
+    );
   }
 
   Widget buildListDuringQuery(BuildContext context, List<String> matchQuery) {
-    return const Placeholder();
-    // return ListView.builder(
-    //   itemCount: matchQuery.length,
-    //   itemBuilder: (context, index) {
-    //     return buildCurrencyTile(
-    //         context,
-    //         matchQuery[index],
-    //         worldCurrencies[matchQuery[index]]['name'],
-    //         worldCurrencies[matchQuery[index]]['symbol']);
-    //   },
-    // );
+    // return const Placeholder();
+    return ListView.builder(
+      itemCount: matchQuery.length,
+      itemBuilder: (context, index) {
+        return buildCurrencyTile(
+            context,
+            matchQuery[index],
+            worldCurrencies[matchQuery[index]]['name'],
+            worldCurrencies[matchQuery[index]]['symbol']);
+      },
+    );
   }
 
-  Widget buildListStart(BuildContext context, List<String> matchQuery) {
-    matchQuery.insert(0, 'USD');
-
+  Widget buildListStart(BuildContext context) {
     ScrollController scrollController = ScrollController();
+    List<String> matchQuery = worldCurrencies.keys.toList();
     List<GlobalKey> sectionKeys =
         List.generate(mapSectionToKey.length, (index) => GlobalKey());
 
@@ -107,10 +143,9 @@ class CurrencySearch extends SearchDelegate<String> {
                         context,
                         sectionKeys[mapSectionToKey[
                             matchQuery[i + 1][0].toUpperCase()]!]),
-                  if (i != 0 &&
-                      !(i < matchQuery.length - 1 &&
-                          matchQuery[i][0].toUpperCase() !=
-                              matchQuery[i + 1][0].toUpperCase()))
+                  if (!(i < matchQuery.length - 1 &&
+                      matchQuery[i][0].toUpperCase() !=
+                          matchQuery[i + 1][0].toUpperCase()))
                     const Divider(color: Colors.lightBlue)
                 ],
               ],
@@ -185,11 +220,21 @@ class CurrencySearch extends SearchDelegate<String> {
   }
 
   @override
+  void showResults(BuildContext context) {
+    if (query.isNotEmpty) {
+      super.showResults(context);
+    }
+  }
+
+  @override
   Widget buildResults(BuildContext context) {
     List<String> matchQuery = worldCurrencies.entries
         .where((entry) =>
-            entry.key.toLowerCase().contains(query.toLowerCase()) ||
-            entry.value['name'].toLowerCase().contains(query.toLowerCase()))
+            entry.key.toLowerCase().startsWith(query.toLowerCase()) ||
+            entry.value['name']
+                .toLowerCase()
+                .split(' ')
+                .any((String word) => word.startsWith(query.toLowerCase())))
         .map((entry) => entry.key)
         .toList();
 
@@ -199,16 +244,18 @@ class CurrencySearch extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) {
     if (query.isEmpty) {
-      return buildListStart(context, worldCurrencies.keys.toList());
+      if (listStartWidget == null) {
+        listStartWidget = buildListStart(context);
+      }
+      return listStartWidget!;
     } else {
       return buildListDuringQuery(
           context,
           worldCurrencies.entries
               .where((entry) =>
                   entry.key.toLowerCase().contains(query.toLowerCase()) ||
-                  entry.value['name']
-                      .toLowerCase()
-                      .contains(query.toLowerCase()))
+                  entry.value['name'].toLowerCase().split(' ').any(
+                      (String word) => word.startsWith(query.toLowerCase())))
               .map((entry) => entry.key)
               .toList());
     }
