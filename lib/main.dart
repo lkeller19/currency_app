@@ -3,6 +3,10 @@ import 'dart:developer' as developer;
 import 'package:intl/intl.dart';
 import 'package:forex_conversion/forex_conversion.dart';
 import 'package:provider/provider.dart';
+import 'package:currency_app/constants.dart';
+
+import 'widgets/currency_search.dart';
+import 'widgets/item.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,7 +24,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: CurrencyConverterBase(),
+        home: const _CurrencyConverterBase(),
       ),
     );
   }
@@ -52,10 +56,14 @@ class MyAppState extends ChangeNotifier {
 
   void setCurrency1(String currency) {
     currency1 = currency;
+    fetchExchangeRate();
+    notifyListeners();
   }
 
   void setCurrency2(String currency) {
     currency2 = currency;
+    fetchExchangeRate();
+    notifyListeners();
   }
 
   List<Item> generateItems(int numberOfItems) {
@@ -86,14 +94,16 @@ class MyAppState extends ChangeNotifier {
   Future<void> fetchExchangeRate() async {
     final fx = Forex();
     var rate = await fx.getCurrencyConverted(
-        sourceCurrency: "USD", destinationCurrency: "EUR", numberOfDecimals: 6);
+        sourceCurrency: currency1,
+        destinationCurrency: currency2,
+        numberOfDecimals: 6);
 
     conversionRate = rate;
     lastUpdated = formatter.format(DateTime.now());
     notifyListeners();
 
     // final response = await http.get(Uri.parse(
-    //     'https://v6.exchangerate-api.com/v6/f709645f805473f614961768/latest/USD'));
+    //     'https://v6.exchangerate-api.com/v6/*****/latest/USD'));
 
     // if (response.statusCode == 200) {
     //   setState(() {
@@ -106,15 +116,29 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
-class CurrencyConverterBase extends StatefulWidget {
+class _CurrencyConverterBase extends StatefulWidget {
+  const _CurrencyConverterBase();
+
   @override
   _CurrencyConverterBaseState createState() => _CurrencyConverterBaseState();
 }
 
-class _CurrencyConverterBaseState extends State<CurrencyConverterBase> {
+class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+
+    Future<void> displaySearch(int currency) async {
+      final selected = await showSearch<String>(
+        context: context,
+        delegate: CurrencySearch(),
+      );
+      if (selected != null && selected.isNotEmpty) {
+        currency == 1
+            ? appState.setCurrency1(selected)
+            : appState.setCurrency2(selected);
+      }
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -138,26 +162,29 @@ class _CurrencyConverterBaseState extends State<CurrencyConverterBase> {
                                 appState.currency2,
                                 appState.conversionRate,
                                 appState.lastUpdated,
-                                appState.swap);
+                                appState.swap,
+                                appState.setCurrency1,
+                                appState.setCurrency2,
+                                displaySearch,
+                                1);
                           },
-                          child: const Text(
-                            'USD',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          child: Text(
+                            appState.currency1,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                         const SizedBox(
                           width: 8,
                         ),
-                        const Text(
-                          'EUR',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        Text(
+                          appState.currency2,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ]),
                 ),
               ExpansionPanelList.radio(
                 expansionCallback: (int index, bool isExpanded) {
                   setState(() {
-                    developer.log("here");
                     appState.data[index].isExpanded = !isExpanded;
                   });
                 },
@@ -171,7 +198,7 @@ class _CurrencyConverterBaseState extends State<CurrencyConverterBase> {
                             11, // Set the height of each ListTile
                         child: ListTile(
                           title: Text(
-                            '${item.headerValue} USD = ${(item.headerValue * appState.conversionRate).toStringAsFixed(2)} EUR',
+                            '${item.headerValue} ${appState.currency1} = ${(item.headerValue * appState.conversionRate).toStringAsFixed(2)} ${appState.currency2}',
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
@@ -199,13 +226,15 @@ class _CurrencyConverterBaseState extends State<CurrencyConverterBase> {
             MainAxisAlignment.end, // Align the buttons to the end
         children: <Widget>[
           FloatingActionButton(
-            onPressed: appState.decreaseFactor, // Add this
+            onPressed: appState.decreaseFactor,
+            heroTag: 'decrease',
             tooltip: 'Decrease',
             child: const Icon(Icons.remove),
           ),
           const SizedBox(width: 10), // Add some space between the buttons
           FloatingActionButton(
             onPressed: appState.increaseFactor, // Update the onPressed handler
+            heroTag: 'increase',
             tooltip: 'Increase',
             child: const Icon(Icons.add),
           ),
@@ -220,59 +249,109 @@ class _CurrencyConverterBaseState extends State<CurrencyConverterBase> {
       String currency2,
       double conversionRate,
       String lastUpdated,
-      Function swap) async {
+      Function swap,
+      Function setCurrency1,
+      Function setCurrency2,
+      Function displaySearch,
+      int currency) async {
     return showModalBottomSheet<void>(
       context: context,
       builder: (BuildContext context) {
-        return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Row(
+        return Wrap(
+          children: [
+            Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '1 $currency1',
-                    style: Theme.of(context).textTheme.bodyLarge,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '1 $currency1',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const Icon(Icons.arrow_right_alt_sharp),
+                      Text(
+                        '$conversionRate $currency2',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.arrow_right_alt_sharp),
                   Text(
-                    '$conversionRate $currency1',
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    'UPDATED: $lastUpdated',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                ],
-              ),
-              Text(
-                'UPDATED: $lastUpdated',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              TextButton(
-                onPressed: () {
-                  swap();
-                  Navigator.pop(context);
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.swap_horiz), // Swap icon
-                    Text('Swap'),
-                  ],
-                ),
-              ),
-            ]);
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await Future.delayed(const Duration(milliseconds: 200));
+                      swap();
+                    },
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.swap_horiz), // Swap icon
+                        Text('Swap'),
+                      ],
+                    ),
+                  ),
+                  currency1 != 'USD' && currency2 != 'USD'
+                      ? TextButton(
+                          onPressed: () {
+                            currency == 1
+                                ? setCurrency1('USD')
+                                : setCurrency2('USD');
+                            Navigator.pop(context);
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(Icons.attach_money),
+                              SizedBox(
+                                width: 8,
+                              ),
+                              Text('Set to United States Dollar'),
+                            ],
+                          ),
+                        )
+                      : Container(),
+                  Builder(
+                    builder: (newContext) => TextButton(
+                      onPressed: () async {
+                        Navigator.pop(newContext);
+                        await Future.delayed(const Duration(milliseconds: 200));
+                        displaySearch(currency);
+                      },
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(Icons.menu),
+                          SizedBox(
+                            width: 8,
+                          ),
+                          Text('Choose Currency...'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text('Cancel'),
+                      ],
+                    ),
+                  ),
+                ]),
+          ],
+        );
       },
-      isScrollControlled: true, // This allows the modal to be full screen
     );
   }
-}
-
-class Item {
-  Item({
-    this.expandedValue = 0,
-    this.headerValue = 0,
-    this.isExpanded = false,
-  });
-
-  int expandedValue;
-  int headerValue;
-  bool isExpanded;
 }
