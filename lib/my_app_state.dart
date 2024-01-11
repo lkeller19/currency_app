@@ -9,7 +9,7 @@ class MyAppState extends ChangeNotifier {
   List<Item> data = [];
 
   MyAppState() {
-    data = generateItems(10);
+    data = generateItems(11);
     fetchExchangeRate();
   }
 
@@ -41,6 +41,13 @@ class MyAppState extends ChangeNotifier {
 
   List<Item> generateItems(int numberOfItems) {
     return List<Item>.generate(numberOfItems, (int index) {
+      // generate first of the next list in case last item is expanded
+      if (index == 10) {
+        return Item(
+          headerValue: (index * 2) * factor,
+          expandedValue: (index * 2) * factor,
+        );
+      }
       return Item(
         headerValue: (index + 1) * factor,
         expandedValue: (index + 1) * factor,

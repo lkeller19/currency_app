@@ -31,6 +31,8 @@ const Map<String, int> mapSectionToKey = {
   'Z': 27,
 };
 
+const List<int> defaultActiveRows = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
 const Map<String, dynamic> worldCurrencies = {
   'AED': {"name": "United Arab Emirates Dirham", "symbol": "د.إ"},
   'AFN': {"name": "Afghan Afghani", "symbol": "؋"},

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
 import 'package:provider/provider.dart';
+import 'constants.dart';
 
 import 'my_app_state.dart';
 import 'widgets/currency_search.dart';
+import 'widgets/custom_expansion_panel.dart';
 import 'widgets/item.dart';
 
 void main() {
@@ -37,6 +38,19 @@ class _CurrencyConverterBase extends StatefulWidget {
 
 class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
   bool _swipeActionPerformed = false;
+  int? selected;
+  List<int> activeRows = defaultActiveRows;
+
+  void _handleExpansionPanelChanged(int? value) {
+    setState(() {
+      selected = value;
+      if (value != null) {
+        activeRows = [value, value + 1];
+      } else {
+        activeRows = defaultActiveRows;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,37 +141,46 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
                         ]),
                   ),
                 ),
-              ExpansionPanelList.radio(
-                expansionCallback: (int index, bool isExpanded) {
-                  setState(() {
-                    appState.data[index].isExpanded = !isExpanded;
-                  });
-                },
-                children: appState.data.map<ExpansionPanelRadio>((Item item) {
-                  return ExpansionPanelRadio(
-                    value: item,
-                    canTapOnHeader: true,
-                    headerBuilder: (BuildContext context, bool isExpanded) {
-                      return SizedBox(
-                        height: MediaQuery.of(context).size.height /
-                            11, // Set the height of each ListTile
-                        child: ListTile(
-                          title: Text(
-                            '${item.headerValue} ${appState.currency1} = ${(item.headerValue * appState.conversionRate).toStringAsFixed(2)} ${appState.currency2}',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
+              Column(
+                children: appState.data.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  Item item = entry.value;
+
+                  return CustomExpansionPanel(
+                    isVisible: activeRows.contains(index),
+                    value: index,
+                    selected: selected,
+                    onChanged: _handleExpansionPanelChanged,
+                    header: Container(
+                      height: MediaQuery.of(context).size.height / 11,
+                      color: Colors.blue,
+                      child: ListTile(
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${item.headerValue}',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            Text(
+                              (item.headerValue * appState.conversionRate)
+                                  .toStringAsFixed(2),
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
                     body: Column(
-                        children: List.generate(9, (i) {
-                      return ListTile(
-                        title: Text(
-                          '${(item.headerValue + ((i + 1) * appState.factor) / 10).toStringAsFixed(appState.factor > 1 ? 0 : 2)} USD = ${((item.headerValue + ((i + 1) * appState.factor) / 10) * appState.conversionRate).toStringAsFixed(2)} EUR',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      );
-                    })),
+                      children: List.generate(9, (i) {
+                        return ListTile(
+                          title: Text(
+                            '${(item.headerValue + ((i + 1) * appState.factor) / 10).toStringAsFixed(appState.factor > 1 ? 0 : 2)} USD = ${((item.headerValue + ((i + 1) * appState.factor) / 10) * appState.conversionRate).toStringAsFixed(2)} EUR',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        );
+                      }),
+                    ),
                   );
                 }).toList(),
               ),
