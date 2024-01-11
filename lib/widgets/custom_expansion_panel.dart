@@ -73,9 +73,17 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
       visible: widget.isVisible,
       child: Column(
         children: [
-          GestureDetector(
-            onTap: _handleTap,
-            child: widget.header,
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                    color: Colors.black, width: 2), // Add bottom border here
+              ),
+            ),
+            child: GestureDetector(
+              onTap: _handleTap,
+              child: widget.header,
+            ),
           ),
           SizeTransition(
             sizeFactor: _heightFactor,

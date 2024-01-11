@@ -72,120 +72,133 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              if (appState.conversionRate == 0)
-                const CircularProgressIndicator()
-              else
-                SizedBox(
-                  height: MediaQuery.of(context).size.height / 11,
-                  child: GestureDetector(
-                    onHorizontalDragUpdate: (DragUpdateDetails details) {
-                      if (!_swipeActionPerformed &&
-                          (details.delta.dx > 0 || details.delta.dx < 0)) {
-                        appState.swap();
-                        _swipeActionPerformed = true;
-                      }
-                    },
-                    onHorizontalDragEnd: (DragEndDetails details) {
-                      _swipeActionPerformed = false;
-                    },
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          TextButton(
-                            onPressed: () {
-                              bottomModal(
-                                  context,
-                                  appState.currency1,
-                                  appState.currency2,
-                                  appState.conversionRate,
-                                  appState.lastUpdated,
-                                  appState.swap,
-                                  appState.setCurrency1,
-                                  appState.setCurrency2,
-                                  displaySearch,
-                                  1);
-                            },
-                            child: Text(
-                              appState.currency1,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (appState.conversionRate == 0)
+              const CircularProgressIndicator()
+            else
+              SizedBox(
+                height: MediaQuery.of(context).size.height / 11,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (DragUpdateDetails details) {
+                    if (!_swipeActionPerformed &&
+                        (details.delta.dx > 0 || details.delta.dx < 0)) {
+                      appState.swap();
+                      _swipeActionPerformed = true;
+                    }
+                  },
+                  onHorizontalDragEnd: (DragEndDetails details) {
+                    _swipeActionPerformed = false;
+                  },
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        TextButton(
+                          onPressed: () {
+                            bottomModal(
+                                context,
+                                appState.currency1,
+                                appState.currency2,
+                                appState.conversionRate,
+                                appState.lastUpdated,
+                                appState.swap,
+                                appState.setCurrency1,
+                                appState.setCurrency2,
+                                displaySearch,
+                                1);
+                          },
+                          child: Text(
+                            appState.currency1,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(
-                            width: 8,
+                        ),
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            bottomModal(
+                                context,
+                                appState.currency1,
+                                appState.currency2,
+                                appState.conversionRate,
+                                appState.lastUpdated,
+                                appState.swap,
+                                appState.setCurrency1,
+                                appState.setCurrency2,
+                                displaySearch,
+                                2);
+                          },
+                          child: Text(
+                            appState.currency2,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              bottomModal(
-                                  context,
-                                  appState.currency1,
-                                  appState.currency2,
-                                  appState.conversionRate,
-                                  appState.lastUpdated,
-                                  appState.swap,
-                                  appState.setCurrency1,
-                                  appState.setCurrency2,
-                                  displaySearch,
-                                  2);
-                            },
-                            child: Text(
-                              appState.currency2,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ]),
-                  ),
+                        ),
+                      ]),
                 ),
-              Column(
-                children: appState.data.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  Item item = entry.value;
+              ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: appState.data.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    Item item = entry.value;
 
-                  return CustomExpansionPanel(
-                    isVisible: activeRows.contains(index),
-                    value: index,
-                    selected: selected,
-                    onChanged: _handleExpansionPanelChanged,
-                    header: Container(
-                      height: MediaQuery.of(context).size.height / 11,
-                      color: Colors.blue,
-                      child: ListTile(
-                        title: Row(
+                    return CustomExpansionPanel(
+                      isVisible: activeRows.contains(index),
+                      value: index,
+                      selected: selected,
+                      onChanged: _handleExpansionPanelChanged,
+                      header: Container(
+                        height: MediaQuery.of(context).size.height / 11,
+                        width: MediaQuery.of(context).size.width,
+                        alignment: Alignment.center,
+                        color: Colors.blue,
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              '${item.headerValue}',
-                              style: Theme.of(context).textTheme.bodyLarge,
+                            Container(
+                              color: Colors.pink,
+                              alignment: Alignment.centerRight,
+                              width: MediaQuery.of(context).size.width / 3,
+                              child: Text(
+                                '${item.headerValue}',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
                             ),
-                            Text(
-                              (item.headerValue * appState.conversionRate)
-                                  .toStringAsFixed(2),
-                              style: Theme.of(context).textTheme.bodyLarge,
+                            const SizedBox(width: 40),
+                            const SizedBox(width: 40),
+                            Container(
+                              color: Colors.pink,
+                              alignment: Alignment.centerLeft,
+                              width: MediaQuery.of(context).size.width / 3,
+                              child: Text(
+                                (item.headerValue * appState.conversionRate)
+                                    .toStringAsFixed(2),
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    body: Column(
-                      children: List.generate(9, (i) {
-                        return ListTile(
-                          title: Text(
-                            '${(item.headerValue + ((i + 1) * appState.factor) / 10).toStringAsFixed(appState.factor > 1 ? 0 : 2)} USD = ${((item.headerValue + ((i + 1) * appState.factor) / 10) * appState.conversionRate).toStringAsFixed(2)} EUR',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        );
-                      }),
-                    ),
-                  );
-                }).toList(),
+                      body: Column(
+                        children: List.generate(9, (i) {
+                          return ListTile(
+                            title: Text(
+                              '${(item.headerValue + ((i + 1) * appState.factor) / 10).toStringAsFixed(appState.factor > 1 ? 0 : 2)} USD = ${((item.headerValue + ((i + 1) * appState.factor) / 10) * appState.conversionRate).toStringAsFixed(2)} EUR',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          );
+                        }),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       // floatingActionButton: Row(
