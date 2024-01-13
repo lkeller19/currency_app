@@ -26,16 +26,17 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _heightFactor;
+  bool isExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 1500),
         vsync: this); // Increase the duration for a more noticeable effect
     _heightFactor = _controller.drive(CurveTween(
         curve:
-            Curves.bounceOut)); // Use Curves.bounceOut for a bounce at the end
+            Curves.elasticIn)); // Use Curves.bounceOut for a bounce at the end
   }
 
   @override
@@ -48,19 +49,28 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
     if (widget.selected != null &&
         (widget.value == widget.selected ||
             widget.value == (widget.selected! + 1))) {
+      setState(() {
+        _heightFactor = _controller.drive(CurveTween(curve: Curves.elasticIn));
+      });
       widget.onChanged(null);
     } else {
+      setState(() {
+        _heightFactor = _controller.drive(CurveTween(curve: Curves.elasticOut));
+      });
       widget.onChanged(widget.value);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isExpanded;
     if (widget.selected == null) {
-      isExpanded = false;
+      setState(() {
+        isExpanded = false;
+      });
     } else {
-      isExpanded = widget.value == widget.selected;
+      setState(() {
+        isExpanded = widget.value == widget.selected;
+      });
     }
 
     if (isExpanded) {
@@ -74,10 +84,13 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
       child: Column(
         children: [
           Container(
+            height: MediaQuery.of(context).size.height / 10.99,
+            width: MediaQuery.of(context).size.width,
+            alignment: Alignment.center,
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                    color: Colors.black, width: 2), // Add bottom border here
+                    color: Colors.white, width: .1), // Add bottom border here
               ),
             ),
             child: GestureDetector(
@@ -89,7 +102,16 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
             sizeFactor: _heightFactor,
             child: GestureDetector(
               onTap: _handleTap, // Close the panel when the body is pressed
-              child: widget.body,
+              child: Container(
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                        color: Colors.white,
+                        width: .1), // Add bottom border here
+                  ),
+                ),
+                child: widget.body,
+              ),
             ),
           ),
         ],
