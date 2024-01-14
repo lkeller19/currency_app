@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 
 class MyAppState extends ChangeNotifier {
   double conversionRate = 0;
-  int factor = 1;
+  double factor = 1.00;
   List<Item> data = [];
+  int leftSideDecimals = 0;
+  int rightSideDecimals = 0;
 
   MyAppState() {
     data = generateItems(11);
@@ -40,6 +42,17 @@ class MyAppState extends ChangeNotifier {
   }
 
   List<Item> generateItems(int numberOfItems) {
+    if (factor == 1.00) {
+      leftSideDecimals = 2;
+    } else {
+      leftSideDecimals = 0;
+    }
+    if (factor * 1 * conversionRate < 100) {
+      rightSideDecimals = 2;
+    } else {
+      rightSideDecimals = 0;
+    }
+
     return List<Item>.generate(numberOfItems, (int index) {
       // generate first of the next list in case last item is expanded
       if (index == 10) {
@@ -56,15 +69,20 @@ class MyAppState extends ChangeNotifier {
   }
 
   void increaseFactor() {
-    factor *= 10;
+    if (factor * 10 >= 1000000000000 &&
+        factor * 10 * conversionRate >= 1000000000000) {
+      // Prevent amount from going above 1 trillion
+      return;
+    }
+    factor *= 10.00;
     data = generateItems(10);
     notifyListeners();
   }
 
   void decreaseFactor() {
-    if (factor > 1) {
+    if (factor > 1.00) {
       // Prevent factor from going below 1
-      factor ~/= 10;
+      factor /= 10.00;
       data = generateItems(10);
     }
     notifyListeners();

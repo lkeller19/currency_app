@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'constants.dart';
 
 import 'my_app_state.dart';
@@ -138,8 +139,21 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 if (appState.conversionRate == 0)
-                  const CircularProgressIndicator()
-                else
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        color: colorHeaderLeft,
+                        width: MediaQuery.of(context).size.width / 2,
+                        height: MediaQuery.of(context).size.height / 11,
+                      ),
+                      Container(
+                        color: colorHeaderRight,
+                        width: MediaQuery.of(context).size.width / 2,
+                        height: MediaQuery.of(context).size.height / 11,
+                      ),
+                    ],
+                  )
+                else ...[
                   SizedBox(
                     height: MediaQuery.of(context).size.height / 11,
                     child: GestureDetector(
@@ -219,121 +233,138 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
                           ]),
                     ),
                   ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        ...appState.data.asMap().entries.map((entry) {
-                          int index = entry.key;
-                          Item item = entry.value;
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          ...appState.data.asMap().entries.map((entry) {
+                            int index = entry.key;
+                            Item item = entry.value;
 
-                          return CustomExpansionPanel(
-                            isVisible: activeRows.contains(index),
-                            value: index,
-                            selected: selected,
-                            onChanged: _handleExpansionPanelChanged,
-                            header: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  color: Colors.transparent,
-                                  alignment: Alignment.centerRight,
-                                  width: MediaQuery.of(context).size.width / 2 -
-                                      40,
-                                  child: Text(
-                                    '${(appState.factor == 1) ? item.headerValue.toStringAsFixed(2) : item.headerValue}',
-                                    style: const TextStyle(
-                                        color: colorTableTextLeft),
-                                  ),
-                                ),
-                                Container(color: Colors.transparent, width: 40),
-                                Container(color: Colors.transparent, width: 40),
-                                Container(
-                                  color: Colors.transparent,
-                                  alignment: Alignment.centerLeft,
-                                  width: MediaQuery.of(context).size.width / 2 -
-                                      40,
-                                  child: Text(
-                                    (item.headerValue * appState.conversionRate)
-                                        .toStringAsFixed(2),
-                                    style: const TextStyle(
-                                        color: colorTableTextRight),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            body: Column(
-                              children: List.generate(9, (i) {
-                                return Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      color: colorChildLeft,
-                                      height:
-                                          MediaQuery.of(context).size.height /
-                                              12.3,
-                                      alignment: Alignment.centerRight,
-                                      width: MediaQuery.of(context).size.width /
-                                              2 -
-                                          40,
-                                      child: Text(
-                                        (item.headerValue +
-                                                ((i + 1) * appState.factor) /
-                                                    10.1)
-                                            .toStringAsFixed(
-                                                appState.factor > 1 ? 0 : 2),
-                                        style: const TextStyle(
-                                            color: colorTableTextLeft),
-                                      ),
+                            return CustomExpansionPanel(
+                              isVisible: activeRows.contains(index),
+                              value: index,
+                              selected: selected,
+                              onChanged: _handleExpansionPanelChanged,
+                              header: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    color: Colors.transparent,
+                                    alignment: Alignment.centerRight,
+                                    width:
+                                        MediaQuery.of(context).size.width / 2 -
+                                            40,
+                                    child: Text(
+                                      formatAbbreviated(item.headerValue,
+                                          appState.leftSideDecimals, true),
+                                      style: const TextStyle(
+                                          color: colorTableTextLeft),
                                     ),
-                                    Container(
+                                  ),
+                                  Container(
+                                      color: Colors.transparent, width: 40),
+                                  Container(
+                                      color: Colors.transparent, width: 40),
+                                  Container(
+                                    color: Colors.transparent,
+                                    alignment: Alignment.centerLeft,
+                                    width:
+                                        MediaQuery.of(context).size.width / 2 -
+                                            40,
+                                    child: Text(
+                                      formatAbbreviated(
+                                          (item.headerValue *
+                                              appState.conversionRate),
+                                          appState.rightSideDecimals,
+                                          false),
+                                      style: const TextStyle(
+                                          color: colorTableTextRight),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              body: Column(
+                                children: List.generate(9, (i) {
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        color: colorChildLeft,
                                         height:
                                             MediaQuery.of(context).size.height /
                                                 12.3,
-                                        color: colorChildLeft,
-                                        width: 40),
-                                    Container(
+                                        alignment: Alignment.centerRight,
+                                        width:
+                                            MediaQuery.of(context).size.width /
+                                                    2 -
+                                                40,
+                                        child: Text(
+                                          formatAbbreviated(
+                                              (item.headerValue +
+                                                  ((i + 1) * appState.factor) /
+                                                      10),
+                                              appState.leftSideDecimals,
+                                              true,
+                                              leftTable: true),
+                                          style: const TextStyle(
+                                              color: colorTableTextLeft),
+                                        ),
+                                      ),
+                                      Container(
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .height /
+                                              12.3,
+                                          color: colorChildLeft,
+                                          width: 40),
+                                      Container(
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .height /
+                                              12.3,
+                                          color: colorChildRight,
+                                          width: 40),
+                                      Container(
                                         height:
                                             MediaQuery.of(context).size.height /
                                                 12.3,
                                         color: colorChildRight,
-                                        width: 40),
-                                    Container(
-                                      height:
-                                          MediaQuery.of(context).size.height /
-                                              12.3,
-                                      color: colorChildRight,
-                                      alignment: Alignment.centerLeft,
-                                      width: MediaQuery.of(context).size.width /
-                                              2 -
-                                          40,
-                                      child: Text(
-                                        ((item.headerValue +
-                                                    ((i + 1) *
-                                                            appState.factor) /
-                                                        10) *
-                                                appState.conversionRate)
-                                            .toStringAsFixed(2),
-                                        style: const TextStyle(
-                                            color: colorTableTextRight),
+                                        alignment: Alignment.centerLeft,
+                                        width:
+                                            MediaQuery.of(context).size.width /
+                                                    2 -
+                                                40,
+                                        child: Text(
+                                          formatAbbreviated(
+                                              ((item.headerValue +
+                                                      ((i + 1) *
+                                                              appState.factor) /
+                                                          10) *
+                                                  appState.conversionRate),
+                                              appState.rightSideDecimals,
+                                              false),
+                                          style: const TextStyle(
+                                              color: colorTableTextRight),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              }),
-                            ),
-                          );
-                        }).toList(),
-                        // if (selected == null)
-                        //   Container(
-                        //     height: MediaQuery.of(context).size.height,
-                        //   ),
-                      ],
+                                    ],
+                                  );
+                                }),
+                              ),
+                            );
+                          }).toList(),
+                          // if (selected == null)
+                          //   Container(
+                          //     height: MediaQuery.of(context).size.height,
+                          //   ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -360,6 +391,34 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
       //   ],
       // ),
     );
+  }
+
+  String formatAbbreviated(double num, int numDecimals, bool leftSide,
+      {bool leftTable = false}) {
+    if (leftTable) {
+      if (num >= 1000000000000 && num < 10000000000000) {
+        return '${(num / 1000000000000).toStringAsFixed(1)}T';
+      } else if (num >= 1000000000 && num < 10000000000) {
+        return '${(num / 1000000000).toStringAsFixed(1)}B';
+      } else if (num >= 1000000 && num < 10000000) {
+        return '${(num / 1000000).toStringAsFixed(1)}M';
+      }
+    }
+    if (num >= 1000000000000) {
+      return '${(num / 1000000000000).toStringAsFixed(leftSide ? 0 : 2)}T';
+    } else if (num >= 1000000000) {
+      return '${(num / 1000000000).toStringAsFixed(leftSide ? 0 : 2)}B';
+    } else if (num >= 1000000) {
+      return '${(num / 1000000).toStringAsFixed(leftSide ? 0 : 2)}M';
+    } else if (num >= 100000) {
+      return '${(num / 1000).toStringAsFixed(0)}K';
+    } else {
+      if (numDecimals == 2) {
+        return NumberFormat("#,##0.00", "en_US").format(num);
+      } else {
+        return NumberFormat("#,##0", "en_US").format(num);
+      }
+    }
   }
 
   Future<void> bottomModal(

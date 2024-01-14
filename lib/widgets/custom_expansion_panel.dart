@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:currency_app/my_app_state.dart';
+import 'package:provider/provider.dart';
 
 class CustomExpansionPanel extends StatefulWidget {
   final Widget header;
@@ -27,6 +29,7 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
   late AnimationController _controller;
   late Animation<double> _heightFactor;
   bool isExpanded = false;
+  bool _swipeActionPerformed = false;
 
   @override
   void initState() {
@@ -63,6 +66,8 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     if (widget.selected == null) {
       setState(() {
         isExpanded = false;
@@ -95,6 +100,18 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
             ),
             child: GestureDetector(
               onTap: _handleTap,
+              onHorizontalDragUpdate: (DragUpdateDetails details) {
+                if (!_swipeActionPerformed && details.delta.dx > 3) {
+                  appState.decreaseFactor();
+                  _swipeActionPerformed = true;
+                } else if (!_swipeActionPerformed && details.delta.dx < -3) {
+                  appState.increaseFactor();
+                  _swipeActionPerformed = true;
+                }
+              },
+              onHorizontalDragEnd: (DragEndDetails details) {
+                _swipeActionPerformed = false;
+              },
               child: widget.header,
             ),
           ),
@@ -102,6 +119,18 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
             sizeFactor: _heightFactor,
             child: GestureDetector(
               onTap: _handleTap, // Close the panel when the body is pressed
+              onHorizontalDragUpdate: (DragUpdateDetails details) {
+                if (!_swipeActionPerformed && details.delta.dx > 3) {
+                  appState.decreaseFactor();
+                  _swipeActionPerformed = true;
+                } else if (!_swipeActionPerformed && details.delta.dx < -3) {
+                  appState.increaseFactor();
+                  _swipeActionPerformed = true;
+                }
+              },
+              onHorizontalDragEnd: (DragEndDetails details) {
+                _swipeActionPerformed = false;
+              },
               child: Container(
                 decoration: const BoxDecoration(
                   border: Border(

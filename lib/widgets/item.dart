@@ -5,7 +5,7 @@ class Item {
     this.isExpanded = false,
   });
 
-  int expandedValue;
-  int headerValue;
+  double expandedValue;
+  double headerValue;
   bool isExpanded;
 }
