@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:currency_app/my_app_state.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 class CustomExpansionPanel extends StatefulWidget {
   final Widget header;
@@ -25,11 +26,15 @@ class CustomExpansionPanel extends StatefulWidget {
 }
 
 class CustomExpansionPanelState extends State<CustomExpansionPanel>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _heightFactor;
   bool isExpanded = false;
   bool _swipeActionPerformed = false;
+  bool _tapDisabled = false;
+  double _dragDistance = 0;
+  late AnimationController _dragController;
+  late Animation _animation;
 
   @override
   void initState() {
@@ -40,15 +45,36 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
     _heightFactor = _controller.drive(CurveTween(
         curve:
             Curves.elasticIn)); // Use Curves.bounceOut for a bounce at the end
+
+    _dragController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300));
+    _animation = Tween(begin: 0.0, end: 0.0).animate(
+        CurvedAnimation(parent: _dragController, curve: Curves.bounceOut));
+
+    _dragController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          _dragDistance = 0;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _dragController.dispose();
     super.dispose();
   }
 
   void _handleTap() {
+    if (_tapDisabled) return;
+
+    _tapDisabled = true;
+    Timer(const Duration(milliseconds: 1750), () {
+      _tapDisabled = false;
+    });
+
     if (widget.selected != null &&
         (widget.value == widget.selected ||
             widget.value == (widget.selected! + 1))) {
@@ -101,36 +127,51 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
             child: GestureDetector(
               onTap: _handleTap,
               onHorizontalDragUpdate: (DragUpdateDetails details) {
-                if (!_swipeActionPerformed && details.delta.dx > 3) {
-                  appState.decreaseFactor();
-                  _swipeActionPerformed = true;
-                } else if (!_swipeActionPerformed && details.delta.dx < -3) {
-                  appState.increaseFactor();
-                  _swipeActionPerformed = true;
-                }
+                setState(() {
+                  _dragDistance += details.delta.dx;
+                  _dragDistance = _dragDistance.clamp(-40.0, 40.0);
+                });
               },
               onHorizontalDragEnd: (DragEndDetails details) {
-                _swipeActionPerformed = false;
+                var dragDistance = _dragDistance;
+                _dragController.reset();
+                _animation = Tween(begin: dragDistance, end: 0.0).animate(
+                    CurvedAnimation(
+                        parent: _dragController, curve: Curves.bounceOut))
+                  ..addListener(() {
+                    setState(() {
+                      _dragDistance = _animation.value;
+                    });
+                  });
+                _dragController.forward();
               },
-              child: widget.header,
+              child: AnimatedBuilder(
+                animation: _dragController,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(_dragDistance, 0),
+                    child: widget.header,
+                  );
+                },
+              ),
             ),
           ),
           SizeTransition(
             sizeFactor: _heightFactor,
             child: GestureDetector(
               onTap: _handleTap, // Close the panel when the body is pressed
-              onHorizontalDragUpdate: (DragUpdateDetails details) {
-                if (!_swipeActionPerformed && details.delta.dx > 3) {
-                  appState.decreaseFactor();
-                  _swipeActionPerformed = true;
-                } else if (!_swipeActionPerformed && details.delta.dx < -3) {
-                  appState.increaseFactor();
-                  _swipeActionPerformed = true;
-                }
-              },
-              onHorizontalDragEnd: (DragEndDetails details) {
-                _swipeActionPerformed = false;
-              },
+              // onHorizontalDragUpdate: (DragUpdateDetails details) {
+              //   if (!_swipeActionPerformed && details.delta.dx > 3) {
+              //     appState.decreaseFactor();
+              //     _swipeActionPerformed = true;
+              //   } else if (!_swipeActionPerformed && details.delta.dx < -3) {
+              //     appState.increaseFactor();
+              //     _swipeActionPerformed = true;
+              //   }
+              // },
+              // onHorizontalDragEnd: (DragEndDetails details) {
+              //   _swipeActionPerformed = false;
+              // },
               child: Container(
                 decoration: const BoxDecoration(
                   border: Border(

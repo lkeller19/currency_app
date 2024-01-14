@@ -71,11 +71,11 @@ flutter:
 
     - family: TilliumWeb
       fonts:
-        - asset: lib/fonts/TilliumWeb-Regular.ttf
-        - asset: lib/fonts/TilliumWeb-Bold.ttf
-        - asset: lib/fonts/TilliumWeb-Italic.ttf
-        - asset: lib/fonts/TilliumWeb-BoldItalic.ttf
-        - asset: lib/fonts/TilliumWeb-Light.ttf
+        - asset: lib\fonts\TitilliumWeb-Regular.ttf
+        - asset: lib\fonts\TitilliumWeb-Regular.ttf
+        - asset: lib\fonts\TitilliumWeb-Regular.ttf
+        - asset: lib\fonts\TitilliumWeb-Regular.ttf
+        - asset: lib\fonts\TitilliumWeb-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
