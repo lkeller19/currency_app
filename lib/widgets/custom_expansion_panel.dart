@@ -30,11 +30,8 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
   late AnimationController _controller;
   late Animation<double> _heightFactor;
   bool isExpanded = false;
-  bool _swipeActionPerformed = false;
   bool _tapDisabled = false;
-  double _dragDistance = 0;
-  late AnimationController _dragController;
-  late Animation _animation;
+  
 
   @override
   void initState() {
@@ -45,25 +42,11 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
     _heightFactor = _controller.drive(CurveTween(
         curve:
             Curves.elasticIn)); // Use Curves.bounceOut for a bounce at the end
-
-    _dragController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 300));
-    _animation = Tween(begin: 0.0, end: 0.0).animate(
-        CurvedAnimation(parent: _dragController, curve: Curves.bounceOut));
-
-    _dragController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() {
-          _dragDistance = 0;
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _dragController.dispose();
     super.dispose();
   }
 
@@ -92,8 +75,6 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
-
     if (widget.selected == null) {
       setState(() {
         isExpanded = false;
@@ -126,34 +107,7 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
             ),
             child: GestureDetector(
               onTap: _handleTap,
-              onHorizontalDragUpdate: (DragUpdateDetails details) {
-                setState(() {
-                  _dragDistance += details.delta.dx;
-                  _dragDistance = _dragDistance.clamp(-40.0, 40.0);
-                });
-              },
-              onHorizontalDragEnd: (DragEndDetails details) {
-                var dragDistance = _dragDistance;
-                _dragController.reset();
-                _animation = Tween(begin: dragDistance, end: 0.0).animate(
-                    CurvedAnimation(
-                        parent: _dragController, curve: Curves.bounceOut))
-                  ..addListener(() {
-                    setState(() {
-                      _dragDistance = _animation.value;
-                    });
-                  });
-                _dragController.forward();
-              },
-              child: AnimatedBuilder(
-                animation: _dragController,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(_dragDistance, 0),
-                    child: widget.header,
-                  );
-                },
-              ),
+              child: widget.header,
             ),
           ),
           SizeTransition(

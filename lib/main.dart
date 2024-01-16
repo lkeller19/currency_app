@@ -44,11 +44,39 @@ class _CurrencyConverterBase extends StatefulWidget {
   _CurrencyConverterBaseState createState() => _CurrencyConverterBaseState();
 }
 
-class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
+class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
+    with SingleTickerProviderStateMixin {
   bool _swipeActionPerformed = false;
   int? selected;
   List<int> activeRows = defaultActiveRows;
   final ScrollController _scrollController = ScrollController();
+  double _dragDistance = 0;
+  late AnimationController _dragController;
+  late Animation _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _dragController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300));
+    _animation = Tween(begin: 0.0, end: 0.0).animate(
+        CurvedAnimation(parent: _dragController, curve: Curves.bounceOut));
+
+    _dragController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          _dragDistance = 0;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _dragController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleExpansionPanelChanged(int? value) async {
     if (value == 9) {
@@ -70,7 +98,7 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
         duration: const Duration(milliseconds: 1500),
         curve: Curves.elasticOut,
       );
-      await Future.delayed(const Duration(milliseconds: 1525));
+      await Future.delayed(const Duration(milliseconds: 1700));
     }
 
     setState(() {
@@ -237,130 +265,182 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase> {
                     child: SingleChildScrollView(
                       controller: _scrollController,
                       physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        children: [
-                          ...appState.data.asMap().entries.map((entry) {
-                            int index = entry.key;
-                            Item item = entry.value;
-
-                            return CustomExpansionPanel(
-                              isVisible: activeRows.contains(index),
-                              value: index,
-                              selected: selected,
-                              onChanged: _handleExpansionPanelChanged,
-                              header: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                      child: GestureDetector(
+                        onHorizontalDragUpdate: (DragUpdateDetails details) {
+                          setState(() {
+                            _dragDistance += details.delta.dx;
+                            _dragDistance = _dragDistance.clamp(-40.0, 40.0);
+                          });
+                        },
+                        onHorizontalDragEnd: (DragEndDetails details) {
+                          var dragDistance = _dragDistance;
+                          _dragController.reset();
+                          _animation = Tween(begin: dragDistance, end: 0.0)
+                              .animate(CurvedAnimation(
+                                  parent: _dragController,
+                                  curve: Curves.bounceOut))
+                            ..addListener(() {
+                              setState(() {
+                                _dragDistance = _animation.value;
+                              });
+                            });
+                          _dragController.forward();
+                        },
+                        child: AnimatedBuilder(
+                          animation: _dragController,
+                          builder: (context, child) {
+                            return Transform.translate(
+                              offset: Offset(_dragDistance, 0),
+                              child: Column(
                                 children: [
-                                  Container(
-                                    color: Colors.transparent,
-                                    alignment: Alignment.centerRight,
-                                    width:
-                                        MediaQuery.of(context).size.width / 2 -
-                                            40,
-                                    child: Text(
-                                      formatAbbreviated(item.headerValue,
-                                          appState.leftSideDecimals, true),
-                                      style: const TextStyle(
-                                          color: colorTableTextLeft),
-                                    ),
-                                  ),
-                                  Container(
-                                      color: Colors.transparent, width: 40),
-                                  Container(
-                                      color: Colors.transparent, width: 40),
-                                  Container(
-                                    color: Colors.transparent,
-                                    alignment: Alignment.centerLeft,
-                                    width:
-                                        MediaQuery.of(context).size.width / 2 -
-                                            40,
-                                    child: Text(
-                                      formatAbbreviated(
-                                          (item.headerValue *
-                                              appState.conversionRate),
-                                          appState.rightSideDecimals,
-                                          false),
-                                      style: const TextStyle(
-                                          color: colorTableTextRight),
-                                    ),
-                                  ),
+                                  ...appState.data.asMap().entries.map((entry) {
+                                    int index = entry.key;
+                                    Item item = entry.value;
+
+                                    return CustomExpansionPanel(
+                                      isVisible: activeRows.contains(index),
+                                      value: index,
+                                      selected: selected,
+                                      onChanged: _handleExpansionPanelChanged,
+                                      header: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            color: Colors.transparent,
+                                            alignment: Alignment.centerRight,
+                                            width: MediaQuery.of(context)
+                                                        .size
+                                                        .width /
+                                                    2 -
+                                                40,
+                                            child: Text(
+                                              formatAbbreviated(
+                                                  item.headerValue,
+                                                  appState.leftSideDecimals,
+                                                  true),
+                                              style: const TextStyle(
+                                                  color: colorTableTextLeft),
+                                            ),
+                                          ),
+                                          Container(
+                                              color: Colors.transparent,
+                                              width: 40),
+                                          Container(
+                                              color: Colors.transparent,
+                                              width: 40),
+                                          Container(
+                                            color: Colors.transparent,
+                                            alignment: Alignment.centerLeft,
+                                            width: MediaQuery.of(context)
+                                                        .size
+                                                        .width /
+                                                    2 -
+                                                40,
+                                            child: Text(
+                                              formatAbbreviated(
+                                                  (item.headerValue *
+                                                      appState.conversionRate),
+                                                  appState.rightSideDecimals,
+                                                  false),
+                                              style: const TextStyle(
+                                                  color: colorTableTextRight),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      body: Column(
+                                        children: List.generate(9, (i) {
+                                          return Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                color: colorChildLeft,
+                                                height: MediaQuery.of(context)
+                                                        .size
+                                                        .height /
+                                                    12.3,
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                width: MediaQuery.of(context)
+                                                            .size
+                                                            .width /
+                                                        2 -
+                                                    40,
+                                                child: Text(
+                                                  formatAbbreviated(
+                                                      (item.headerValue +
+                                                          ((i + 1) *
+                                                                  appState
+                                                                      .factor) /
+                                                              10),
+                                                      appState.leftSideDecimals,
+                                                      true,
+                                                      leftTable: true),
+                                                  style: const TextStyle(
+                                                      color:
+                                                          colorTableTextLeft),
+                                                ),
+                                              ),
+                                              Container(
+                                                  height: MediaQuery.of(context)
+                                                          .size
+                                                          .height /
+                                                      12.3,
+                                                  color: colorChildLeft,
+                                                  width: 40),
+                                              Container(
+                                                  height: MediaQuery.of(context)
+                                                          .size
+                                                          .height /
+                                                      12.3,
+                                                  color: colorChildRight,
+                                                  width: 40),
+                                              Container(
+                                                height: MediaQuery.of(context)
+                                                        .size
+                                                        .height /
+                                                    12.3,
+                                                color: colorChildRight,
+                                                alignment: Alignment.centerLeft,
+                                                width: MediaQuery.of(context)
+                                                            .size
+                                                            .width /
+                                                        2 -
+                                                    40,
+                                                child: Text(
+                                                  formatAbbreviated(
+                                                      ((item.headerValue +
+                                                              ((i + 1) *
+                                                                      appState
+                                                                          .factor) /
+                                                                  10) *
+                                                          appState
+                                                              .conversionRate),
+                                                      appState
+                                                          .rightSideDecimals,
+                                                      false),
+                                                  style: const TextStyle(
+                                                      color:
+                                                          colorTableTextRight),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  // if (selected == null)
+                                  //   Container(
+                                  //     height: MediaQuery.of(context).size.height,
+                                  //   ),
                                 ],
                               ),
-                              body: Column(
-                                children: List.generate(9, (i) {
-                                  return Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        color: colorChildLeft,
-                                        height:
-                                            MediaQuery.of(context).size.height /
-                                                12.3,
-                                        alignment: Alignment.centerRight,
-                                        width:
-                                            MediaQuery.of(context).size.width /
-                                                    2 -
-                                                40,
-                                        child: Text(
-                                          formatAbbreviated(
-                                              (item.headerValue +
-                                                  ((i + 1) * appState.factor) /
-                                                      10),
-                                              appState.leftSideDecimals,
-                                              true,
-                                              leftTable: true),
-                                          style: const TextStyle(
-                                              color: colorTableTextLeft),
-                                        ),
-                                      ),
-                                      Container(
-                                          height: MediaQuery.of(context)
-                                                  .size
-                                                  .height /
-                                              12.3,
-                                          color: colorChildLeft,
-                                          width: 40),
-                                      Container(
-                                          height: MediaQuery.of(context)
-                                                  .size
-                                                  .height /
-                                              12.3,
-                                          color: colorChildRight,
-                                          width: 40),
-                                      Container(
-                                        height:
-                                            MediaQuery.of(context).size.height /
-                                                12.3,
-                                        color: colorChildRight,
-                                        alignment: Alignment.centerLeft,
-                                        width:
-                                            MediaQuery.of(context).size.width /
-                                                    2 -
-                                                40,
-                                        child: Text(
-                                          formatAbbreviated(
-                                              ((item.headerValue +
-                                                      ((i + 1) *
-                                                              appState.factor) /
-                                                          10) *
-                                                  appState.conversionRate),
-                                              appState.rightSideDecimals,
-                                              false),
-                                          style: const TextStyle(
-                                              color: colorTableTextRight),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }),
-                              ),
                             );
-                          }).toList(),
-                          // if (selected == null)
-                          //   Container(
-                          //     height: MediaQuery.of(context).size.height,
-                          //   ),
-                        ],
+                          },
+                        ),
                       ),
                     ),
                   ),
