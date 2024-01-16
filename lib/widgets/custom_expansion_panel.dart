@@ -31,7 +31,7 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
   late Animation<double> _heightFactor;
   bool isExpanded = false;
   bool _tapDisabled = false;
-  
+  bool _swipeActionPerformed = false;
 
   @override
   void initState() {
@@ -75,6 +75,7 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<MyAppState>(context);
     if (widget.selected == null) {
       setState(() {
         isExpanded = false;
@@ -114,18 +115,18 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
             sizeFactor: _heightFactor,
             child: GestureDetector(
               onTap: _handleTap, // Close the panel when the body is pressed
-              // onHorizontalDragUpdate: (DragUpdateDetails details) {
-              //   if (!_swipeActionPerformed && details.delta.dx > 3) {
-              //     appState.decreaseFactor();
-              //     _swipeActionPerformed = true;
-              //   } else if (!_swipeActionPerformed && details.delta.dx < -3) {
-              //     appState.increaseFactor();
-              //     _swipeActionPerformed = true;
-              //   }
-              // },
-              // onHorizontalDragEnd: (DragEndDetails details) {
-              //   _swipeActionPerformed = false;
-              // },
+              onHorizontalDragUpdate: (DragUpdateDetails details) {
+                if (!_swipeActionPerformed && details.delta.dx > 3) {
+                  appState.decreaseFactor();
+                  _swipeActionPerformed = true;
+                } else if (!_swipeActionPerformed && details.delta.dx < -3) {
+                  appState.increaseFactor();
+                  _swipeActionPerformed = true;
+                }
+              },
+              onHorizontalDragEnd: (DragEndDetails details) {
+                _swipeActionPerformed = false;
+              },
               child: Container(
                 decoration: const BoxDecoration(
                   border: Border(

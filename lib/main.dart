@@ -6,7 +6,6 @@ import 'constants.dart';
 import 'my_app_state.dart';
 import 'widgets/currency_search.dart';
 import 'widgets/custom_expansion_panel.dart';
-import 'widgets/item.dart';
 
 void main() {
   runApp(const MyApp());
@@ -53,13 +52,14 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
   double _dragDistance = 0;
   late AnimationController _dragController;
   late Animation _animation;
+  bool isDragging = false;
 
   @override
   void initState() {
     super.initState();
 
     _dragController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 300));
+        vsync: this, duration: const Duration(milliseconds: 200));
     _animation = Tween(begin: 0.0, end: 0.0).animate(
         CurvedAnimation(parent: _dragController, curve: Curves.bounceOut));
 
@@ -266,14 +266,25 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                       controller: _scrollController,
                       physics: const BouncingScrollPhysics(),
                       child: GestureDetector(
+                        onHorizontalDragStart: (DragStartDetails details) {
+                          setState(() {
+                            isDragging = true;
+                          });
+                        },
                         onHorizontalDragUpdate: (DragUpdateDetails details) {
                           setState(() {
                             _dragDistance += details.delta.dx;
                             _dragDistance = _dragDistance.clamp(-40.0, 40.0);
                           });
                         },
-                        onHorizontalDragEnd: (DragEndDetails details) {
+                        onHorizontalDragEnd: (DragEndDetails details) async {
                           var dragDistance = _dragDistance;
+                          if (_dragDistance < -35) {
+                            appState.increaseFactor();
+                          } else if (_dragDistance > 35) {
+                            appState.decreaseFactor();
+                          }
+
                           _dragController.reset();
                           _animation = Tween(begin: dragDistance, end: 0.0)
                               .animate(CurvedAnimation(
@@ -285,6 +296,9 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                               });
                             });
                           _dragController.forward();
+                          setState(() {
+                            isDragging = false;
+                          });
                         },
                         child: AnimatedBuilder(
                           animation: _dragController,
@@ -293,9 +307,13 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                               offset: Offset(_dragDistance, 0),
                               child: Column(
                                 children: [
-                                  ...appState.data.asMap().entries.map((entry) {
+                                  ...appState.current
+                                      .asMap()
+                                      .entries
+                                      .map((entry) {
                                     int index = entry.key;
-                                    Item item = entry.value;
+                                    double currentValue =
+                                        appState.current[index];
 
                                     return CustomExpansionPanel(
                                       isVisible: activeRows.contains(index),
@@ -314,13 +332,57 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                                                         .width /
                                                     2 -
                                                 40,
-                                            child: Text(
-                                              formatAbbreviated(
-                                                  item.headerValue,
-                                                  appState.leftSideDecimals,
-                                                  true),
-                                              style: const TextStyle(
-                                                  color: colorTableTextLeft),
+                                            child: Stack(
+                                              alignment: Alignment.centerRight,
+                                              children: [
+                                                // Current number
+                                                Opacity(
+                                                  opacity: isDragging
+                                                      ? 1 -
+                                                          (_dragDistance.abs() /
+                                                                  40)
+                                                              .clamp(0.0, 1.0)
+                                                      : 1.0,
+                                                  child: Text(
+                                                    formatAbbreviated(
+                                                        currentValue,
+                                                        (appState.factor == 1.00
+                                                            ? 2
+                                                            : 0),
+                                                        true),
+                                                    style: const TextStyle(
+                                                        color:
+                                                            colorTableTextLeft),
+                                                  ),
+                                                ),
+                                                // Next number
+                                                if (isDragging)
+                                                  Opacity(
+                                                    opacity:
+                                                        (_dragDistance.abs() /
+                                                                40)
+                                                            .clamp(0.0, 1.0),
+                                                    child: Text(
+                                                      formatAbbreviated(
+                                                          _dragDistance < 0
+                                                              ? appState
+                                                                  .next[index]
+                                                              : appState
+                                                                  .prev[index],
+                                                          (appState.factor <=
+                                                                  10.00
+                                                              ? _dragDistance >
+                                                                      0
+                                                                  ? 2
+                                                                  : 0
+                                                              : 0),
+                                                          true),
+                                                      style: const TextStyle(
+                                                          color:
+                                                              colorTableTextLeft),
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
                                           ),
                                           Container(
@@ -337,14 +399,66 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                                                         .width /
                                                     2 -
                                                 40,
-                                            child: Text(
-                                              formatAbbreviated(
-                                                  (item.headerValue *
-                                                      appState.conversionRate),
-                                                  appState.rightSideDecimals,
-                                                  false),
-                                              style: const TextStyle(
-                                                  color: colorTableTextRight),
+                                            child: Stack(
+                                              alignment: Alignment.centerRight,
+                                              children: [
+                                                // Current number
+                                                Opacity(
+                                                  opacity: isDragging
+                                                      ? 1 -
+                                                          (_dragDistance.abs() /
+                                                                  40)
+                                                              .clamp(0.0, 1.0)
+                                                      : 1.0,
+                                                  child: Text(
+                                                    formatAbbreviated(
+                                                        (currentValue *
+                                                            appState
+                                                                .conversionRate),
+                                                        (appState.factor *
+                                                                    1 *
+                                                                    appState
+                                                                        .conversionRate <
+                                                                100)
+                                                            ? 2
+                                                            : 0,
+                                                        false),
+                                                    style: const TextStyle(
+                                                        color:
+                                                            colorTableTextRight),
+                                                  ),
+                                                ),
+                                                if (isDragging)
+                                                  Opacity(
+                                                    opacity:
+                                                        (_dragDistance.abs() /
+                                                                40)
+                                                            .clamp(0.0, 1.0),
+                                                    child: Text(
+                                                      formatAbbreviated(
+                                                          _dragDistance < 0
+                                                              ? appState.next[
+                                                                      index] *
+                                                                  appState
+                                                                      .conversionRate
+                                                              : appState.prev[
+                                                                      index] *
+                                                                  appState
+                                                                      .conversionRate,
+                                                          (appState.factor *
+                                                                      1 *
+                                                                      appState
+                                                                          .conversionRate <
+                                                                  100)
+                                                              ? 2
+                                                              : 0,
+                                                          false),
+                                                      style: const TextStyle(
+                                                          color:
+                                                              colorTableTextLeft),
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
                                           ),
                                         ],
@@ -370,14 +484,15 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                                                     40,
                                                 child: Text(
                                                   formatAbbreviated(
-                                                      (item.headerValue +
+                                                      (currentValue +
                                                           ((i + 1) *
                                                                   appState
                                                                       .factor) /
                                                               10),
-                                                      appState.leftSideDecimals,
-                                                      true,
-                                                      leftTable: true),
+                                                      (appState.factor == 1.00
+                                                          ? 2
+                                                          : 0),
+                                                      true),
                                                   style: const TextStyle(
                                                       color:
                                                           colorTableTextLeft),
@@ -411,15 +526,20 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                                                     40,
                                                 child: Text(
                                                   formatAbbreviated(
-                                                      ((item.headerValue +
+                                                      ((currentValue +
                                                               ((i + 1) *
                                                                       appState
                                                                           .factor) /
                                                                   10) *
                                                           appState
                                                               .conversionRate),
-                                                      appState
-                                                          .rightSideDecimals,
+                                                      (appState.factor *
+                                                                  1 *
+                                                                  appState
+                                                                      .conversionRate <
+                                                              100)
+                                                          ? 2
+                                                          : 0,
                                                       false),
                                                   style: const TextStyle(
                                                       color:
@@ -450,32 +570,11 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
           ),
         ],
       ),
-      // floatingActionButton: Row(
-      //   // Wrap the FloatingActionButtons in a Row
-      //   mainAxisAlignment:
-      //       MainAxisAlignment.end, // Align the buttons to the end
-      //   children: <Widget>[
-      //     FloatingActionButton(
-      //       onPressed: appState.decreaseFactor,
-      //       heroTag: 'decrease',
-      //       tooltip: 'Decrease',
-      //       child: const Icon(Icons.remove),
-      //     ),
-      //     const SizedBox(width: 10), // Add some space between the buttons
-      //     FloatingActionButton(
-      //       onPressed: appState.increaseFactor, // Update the onPressed handler
-      //       heroTag: 'increase',
-      //       tooltip: 'Increase',
-      //       child: const Icon(Icons.add),
-      //     ),
-      //   ],
-      // ),
     );
   }
 
-  String formatAbbreviated(double num, int numDecimals, bool leftSide,
-      {bool leftTable = false}) {
-    if (leftTable) {
+  String formatAbbreviated(double num, int numDecimals, bool leftSide) {
+    if (leftSide) {
       if (num >= 1000000000000 && num < 10000000000000) {
         return '${(num / 1000000000000).toStringAsFixed(1)}T';
       } else if (num >= 1000000000 && num < 10000000000) {

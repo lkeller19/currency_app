@@ -1,4 +1,3 @@
-import 'package:currency_app/widgets/item.dart';
 import 'package:flutter/material.dart';
 import 'package:forex_conversion/forex_conversion.dart';
 import 'package:intl/intl.dart';
@@ -6,12 +5,15 @@ import 'package:intl/intl.dart';
 class MyAppState extends ChangeNotifier {
   double conversionRate = 0;
   double factor = 1.00;
-  List<Item> data = [];
-  int leftSideDecimals = 0;
-  int rightSideDecimals = 0;
+  List<double> current = [];
+  List<double> prev = [];
+  List<double> next = [];
+  bool maxValueReached = false;
 
   MyAppState() {
-    data = generateItems(11);
+    current = generateItems(factor);
+    prev = generateItems(factor);
+    next = generateItems(factor * 10.00);
     fetchExchangeRate();
   }
 
@@ -41,49 +43,54 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<Item> generateItems(int numberOfItems) {
-    if (factor == 1.00) {
-      leftSideDecimals = 2;
-    } else {
-      leftSideDecimals = 0;
-    }
-    if (factor * 1 * conversionRate < 100) {
-      rightSideDecimals = 2;
-    } else {
-      rightSideDecimals = 0;
-    }
+  // create generate next and generate previous
 
-    return List<Item>.generate(numberOfItems, (int index) {
+  List<double> generateItems(double factorValue, {int numValues = 11}) {
+    return List<double>.generate(numValues, (int index) {
       // generate first of the next list in case last item is expanded
       if (index == 10) {
-        return Item(
-          headerValue: (index * 2) * factor,
-          expandedValue: (index * 2) * factor,
-        );
+        return (index * 2) * factorValue;
       }
-      return Item(
-        headerValue: (index + 1) * factor,
-        expandedValue: (index + 1) * factor,
-      );
+      return (index + 1) * factorValue;
     });
   }
 
   void increaseFactor() {
-    if (factor * 10 >= 1000000000000 &&
-        factor * 10 * conversionRate >= 1000000000000) {
-      // Prevent amount from going above 1 trillion
+    if (maxValueReached) {
+      return;
+    }
+    if (factor * 10 >= 100000000000 &&
+        factor * 10 * conversionRate >= 100000000000) {
+      factor *= 10.00;
+      prev = current;
+      current = generateItems(factor);
+      next = current;
+      maxValueReached = true;
       return;
     }
     factor *= 10.00;
-    data = generateItems(10);
+    prev = current;
+    current = generateItems(factor);
+    next = generateItems(factor * 10.00);
     notifyListeners();
   }
 
   void decreaseFactor() {
-    if (factor > 1.00) {
+    if (factor / 10.00 <= 100000000000 &&
+        factor / 10.00 * conversionRate <= 100000000000) {
+      maxValueReached = false;
+    }
+    if (factor > 10.00) {
       // Prevent factor from going below 1
       factor /= 10.00;
-      data = generateItems(10);
+      prev = generateItems(factor / 10.00);
+      next = current;
+      current = generateItems(factor);
+    } else if (factor > 1.00) {
+      factor /= 10.00;
+      next = current;
+      current = generateItems(factor);
+      prev = current;
     }
     notifyListeners();
   }
