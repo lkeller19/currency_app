@@ -1,4 +1,4 @@
-package com.example.currency_app
+package com.randotech.qcc
 
 import io.flutter.embedding.android.FlutterActivity
 
