@@ -96,6 +96,9 @@ class MyAppState extends ChangeNotifier {
   }
 
   Future<void> fetchExchangeRate() async {
+    conversionRate = 0;
+    notifyListeners();
+
     final fx = Forex();
     var rate = await fx.getCurrencyConverted(
         sourceCurrency: currency1,

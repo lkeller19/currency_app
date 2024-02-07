@@ -11,18 +11,18 @@ class ScrollBar extends StatefulWidget {
 }
 
 class ScrollBarState extends State<ScrollBar> {
-  Color _backgroundColor = const Color.fromARGB(255, 124, 124, 124);
+  Color _backgroundColor = colorTableRight;
   int _selectedIndex = -1;
 
   void _onPointerDown(PointerDownEvent details) {
     setState(() {
-      _backgroundColor = Colors.lightBlue;
+      _backgroundColor = colorHeaderRight;
     });
   }
 
   void _onPointerUp(PointerUpEvent details) {
     setState(() {
-      _backgroundColor = const Color.fromARGB(255, 124, 124, 124);
+      _backgroundColor = colorTableRight;
     });
   }
 
@@ -64,7 +64,7 @@ class ScrollBarState extends State<ScrollBar> {
                   builder: (BuildContext context, BoxConstraints constraints) {
                     return Container(
                       color: index == _selectedIndex
-                          ? Colors.red
+                          ? colorHeaderTextRight
                           : _backgroundColor,
                       child: Center(
                         child: Text(

@@ -39,6 +39,7 @@ dependencies:
   intl: ^0.18.1
   forex_conversion: ^0.2.5+1
   modal_bottom_sheet: ^2.1.2
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
@@ -56,19 +57,16 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - lib/assets/swipeleft.png
+    - lib/assets/swiperight.png
+    - lib/assets/press.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
   fonts:
-    - family: NotoSans
-      fonts:
-        - asset: lib/fonts/NotoSans-Regular.ttf
-        - asset: lib/fonts/NotoSans-Bold.ttf
-        - asset: lib/fonts/NotoSans-Italic.ttf
-        - asset: lib/fonts/NotoSans-BoldItalic.ttf
-
     - family: TilliumWeb
       fonts:
         - asset: lib\fonts\TitilliumWeb-Regular.ttf

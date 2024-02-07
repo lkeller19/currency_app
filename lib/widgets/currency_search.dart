@@ -24,23 +24,17 @@ class CurrencySearch extends SearchDelegate<String> {
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
-      Padding(
-        padding: const EdgeInsets.only(right: 16.0),
+      IgnorePointer(
+        ignoring: query.isEmpty,
         child: Opacity(
-            opacity: query.isEmpty ? 0.0 : 1.0,
-            child: CircleAvatar(
-              backgroundColor: Colors.grey[200], // Same color as the search bar
-              child: IconButton(
-                icon: const Icon(Icons.clear),
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  if (query.isEmpty) {
-                    return;
-                  }
-                  query = '';
-                },
-              ),
-            )),
+          opacity: query.isEmpty ? 0.0 : 1.0,
+          child: IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              query = '';
+            },
+          ),
+        ),
       ),
     ];
   }
@@ -85,70 +79,77 @@ class CurrencySearch extends SearchDelegate<String> {
           left: 0,
           right: 0,
           bottom: 0,
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              children: <Widget>[
-                for (var i = 0; i < matchQuery.length; i++) ...[
-                  if (i == 0)
-                    Column(
-                      children: <Widget>[
-                        Container(key: sectionKeys[mapSectionToKey['-']!]),
-                        buildCurrencyTile(
-                            context, 'USD', 'United States Dollar', '\$'),
-                        const Divider(color: Colors.lightBlue),
-                        const SizedBox(height: 4),
-                        Divider(
-                            key: sectionKeys[mapSectionToKey['*']!],
-                            color: Colors.black),
-                        const Row(children: [
-                          SizedBox(width: 8),
-                          Icon(Icons.star),
-                          Text('POPULAR',
-                              style: TextStyle(fontWeight: FontWeight.bold))
-                        ]),
-                        const Divider(color: Colors.black),
-                        for (var i = 0; i < popularCurrencies.length; i++) ...[
+          child: Container(
+            color: colorChildRight, // Change this to your desired color
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                children: <Widget>[
+                  for (var i = 0; i < matchQuery.length; i++) ...[
+                    if (i == 0)
+                      Column(
+                        children: <Widget>[
+                          Container(key: sectionKeys[mapSectionToKey['-']!]),
                           buildCurrencyTile(
-                            context,
-                            popularCurrencies[i],
-                            worldCurrencies[popularCurrencies[i]]['name'],
-                            worldCurrencies[popularCurrencies[i]]['symbol'],
-                          ),
-                          (i == popularCurrencies.length - 1)
-                              ? Container()
-                              : const Divider(color: Colors.lightBlue),
+                              context, 'USD', 'United States Dollar', '\$'),
+                          const Divider(color: colorHeaderTextRight),
+                          const SizedBox(height: 4),
+                          Divider(
+                              key: sectionKeys[mapSectionToKey['*']!],
+                              color: Colors.black),
+                          const Row(children: [
+                            SizedBox(width: 8),
+                            Icon(Icons.star),
+                            SizedBox(width: 4),
+                            Text('POPULAR',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 20))
+                          ]),
+                          const Divider(color: Colors.black),
+                          for (var i = 0;
+                              i < popularCurrencies.length;
+                              i++) ...[
+                            buildCurrencyTile(
+                              context,
+                              popularCurrencies[i],
+                              worldCurrencies[popularCurrencies[i]]['name'],
+                              worldCurrencies[popularCurrencies[i]]['symbol'],
+                            ),
+                            (i == popularCurrencies.length - 1)
+                                ? Container()
+                                : const Divider(color: colorHeaderTextRight),
+                          ],
+                          createCategoryDivider(
+                              matchQuery,
+                              i,
+                              context,
+                              sectionKeys[mapSectionToKey[
+                                  matchQuery[i + 1][0].toUpperCase()]!]),
                         ],
-                        createCategoryDivider(
-                            matchQuery,
-                            i,
-                            context,
-                            sectionKeys[mapSectionToKey[
-                                matchQuery[i + 1][0].toUpperCase()]!]),
-                      ],
+                      ),
+                    buildCurrencyTile(
+                      context,
+                      matchQuery[i],
+                      worldCurrencies[matchQuery[i]]['name'],
+                      worldCurrencies[matchQuery[i]]['symbol'],
                     ),
-                  buildCurrencyTile(
-                    context,
-                    matchQuery[i],
-                    worldCurrencies[matchQuery[i]]['name'],
-                    worldCurrencies[matchQuery[i]]['symbol'],
-                  ),
-                  if ((i != 0) &&
-                      (i < matchQuery.length - 1 &&
-                          matchQuery[i][0].toUpperCase() !=
-                              matchQuery[i + 1][0].toUpperCase()))
-                    createCategoryDivider(
-                        matchQuery,
-                        i,
-                        context,
-                        sectionKeys[mapSectionToKey[
-                            matchQuery[i + 1][0].toUpperCase()]!]),
-                  if (!(i < matchQuery.length - 1 &&
-                      matchQuery[i][0].toUpperCase() !=
-                          matchQuery[i + 1][0].toUpperCase()))
-                    const Divider(color: Colors.lightBlue)
+                    if ((i != 0) &&
+                        (i < matchQuery.length - 1 &&
+                            matchQuery[i][0].toUpperCase() !=
+                                matchQuery[i + 1][0].toUpperCase()))
+                      createCategoryDivider(
+                          matchQuery,
+                          i,
+                          context,
+                          sectionKeys[mapSectionToKey[
+                              matchQuery[i + 1][0].toUpperCase()]!]),
+                    if (!(i < matchQuery.length - 1 &&
+                        matchQuery[i][0].toUpperCase() !=
+                            matchQuery[i + 1][0].toUpperCase()))
+                      const Divider(color: colorHeaderTextRight)
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -175,14 +176,14 @@ class CurrencySearch extends SearchDelegate<String> {
       BuildContext context, GlobalKey sectionKey) {
     return Column(
       children: <Widget>[
-        const Divider(color: Colors.lightBlue),
+        const Divider(color: colorHeaderTextRight),
         const SizedBox(height: 4),
         Divider(key: sectionKey, color: Colors.black),
         Row(children: [
           const SizedBox(width: 8),
           Text(
             matchQuery[index + 1][0].toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           )
         ]),
         const Divider(color: Colors.black),
@@ -192,29 +193,36 @@ class CurrencySearch extends SearchDelegate<String> {
 
   Widget buildCurrencyTile(BuildContext context, String currencyCode,
       String currencyName, String currencySymbol) {
-    return ListTile(
-      onTap: () {
-        close(context, currencyCode);
-      },
-      title: Row(
-        children: <Widget>[
-          Flexible(
-            fit: FlexFit.loose,
-            child: Text.rich(
-              TextSpan(
-                children: <TextSpan>[
-                  TextSpan(
-                    text: '$currencyCode: ',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(text: '$currencyName '),
-                  TextSpan(text: '($currencySymbol)'),
-                ],
+    return Container(
+      color: colorChildRight,
+      child: ListTile(
+        onTap: () {
+          close(context, currencyCode);
+        },
+        title: Row(
+          children: <Widget>[
+            Flexible(
+              fit: FlexFit.loose,
+              child: Text.rich(
+                TextSpan(
+                  style:
+                      const TextStyle(color: colorTableTextLeft, fontSize: 16),
+                  children: <TextSpan>[
+                    TextSpan(
+                      text: '$currencyCode: ',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextSpan(text: '$currencyName '),
+                    TextSpan(text: '($currencySymbol)'),
+                  ],
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

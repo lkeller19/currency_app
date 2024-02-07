@@ -2,16 +2,29 @@ import 'package:flutter/material.dart';
 
 const List<String> popularCurrencies = ['JPY', 'GBP', 'EUR', 'AUD', 'CHF'];
 
-const Color colorTableLeft = Color(0xFF2d2c39); // table left
-const Color colorTableRight = Color(0xFF7e8d91); // table right
-const Color colorHeaderLeft = Color(0xFF221e27); // header right
-const Color colorHeaderRight = Color(0xFF727e82); // header left
-const Color colorChildLeft = Color(0xFF1f1f28); // child table left
-const Color colorChildRight = Color(0xFF586368); // child table right
-const Color colorHeaderTextLeft = Color(0xFFc14c4c);
-const Color colorHeaderTextRight = Color(0xFFeeab5d);
-const Color colorTableTextLeft = Color(0xFFf9faff);
-const Color colorTableTextRight = Color(0xFFf4f0e3);
+const Color colorTableLeft = Color(0xFF2D3142); // table left
+const Color colorTableRight = Color.fromARGB(255, 85, 111, 149); // table right
+const Color colorHeaderLeft = Color(0xFF031927); // header right
+const Color colorHeaderRight = Color(0xFF1B4079); // header left
+const Color colorChildLeft = Color.fromARGB(255, 2, 20, 32); // child table left
+const Color colorChildRight =
+    Color.fromARGB(255, 18, 56, 113); // child table right
+const Color colorHeaderTextLeft = Color(0xFFFF3131);
+const Color colorHeaderTextRight = Color(0xFFFFE156);
+const Color colorTableTextRight = Color.fromARGB(255, 249, 255, 232);
+const Color colorTableTextLeft = Color.fromARGB(255, 244, 251, 241);
+
+// original colors
+// const Color colorTableLeft = Color(0xFF2d2c39); // table left
+// const Color colorTableRight = Color(0xFF7e8d91); // table right
+// const Color colorHeaderLeft = Color(0xFF221e27); // header right
+// const Color colorHeaderRight = Color(0xFF727e82); // header left
+// const Color colorChildLeft = Color(0xFF1f1f28); // child table left
+// const Color colorChildRight = Color(0xFF586368); // child table right
+// const Color colorHeaderTextLeft = Color(0xFFc14c4c);
+// const Color colorHeaderTextRight = Color(0xFFeeab5d);
+// const Color colorTableTextLeft = Color(0xFFf9faff);
+// const Color colorTableTextRight = Color(0xFFf4f0e3);
 
 const Map<String, int> mapSectionToKey = {
   '-': 0,

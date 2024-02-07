@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:currency_app/my_app_state.dart';
-import 'package:provider/provider.dart';
 import 'dart:async';
 
 class CustomExpansionPanel extends StatefulWidget {
@@ -10,16 +8,19 @@ class CustomExpansionPanel extends StatefulWidget {
   final int? selected;
   final ValueChanged<int?> onChanged;
   final bool isVisible;
+  final GlobalKey<CustomExpansionPanelState> panelKey;
+  final double bezelHeight;
 
   const CustomExpansionPanel({
-    super.key,
+    required this.panelKey,
     required this.header,
     required this.body,
     required this.value,
     required this.selected,
     required this.onChanged,
     required this.isVisible,
-  });
+    required this.bezelHeight,
+  }) : super(key: panelKey);
 
   @override
   CustomExpansionPanelState createState() => CustomExpansionPanelState();
@@ -50,7 +51,7 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
     super.dispose();
   }
 
-  void _handleTap() {
+  void handleTap() {
     if (_tapDisabled) return;
 
     _tapDisabled = true;
@@ -75,7 +76,6 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<MyAppState>(context);
     if (widget.selected == null) {
       setState(() {
         isExpanded = false;
@@ -97,7 +97,8 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
       child: Column(
         children: [
           Container(
-            height: MediaQuery.of(context).size.height / 10.99,
+            height: (MediaQuery.of(context).size.height - widget.bezelHeight) /
+                10.99,
             width: MediaQuery.of(context).size.width,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
@@ -107,20 +108,20 @@ class CustomExpansionPanelState extends State<CustomExpansionPanel>
               ),
             ),
             child: GestureDetector(
-              onTap: _handleTap,
+              onTap: handleTap,
               child: widget.header,
             ),
           ),
           SizeTransition(
             sizeFactor: _heightFactor,
             child: GestureDetector(
-              onTap: _handleTap, // Close the panel when the body is pressed
+              onTap: handleTap, // Close the panel when the body is pressed
               onHorizontalDragUpdate: (DragUpdateDetails details) {
                 if (!_swipeActionPerformed && details.delta.dx > 3) {
-                  appState.decreaseFactor();
+                  // appState.decreaseFactor(); // commented out simply to override the base drag functionality to do nothing if panel is open
                   _swipeActionPerformed = true;
                 } else if (!_swipeActionPerformed && details.delta.dx < -3) {
-                  appState.increaseFactor();
+                  // appState.increaseFactor();
                   _swipeActionPerformed = true;
                 }
               },
