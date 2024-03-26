@@ -40,6 +40,8 @@ dependencies:
   forex_conversion: ^0.2.5+1
   modal_bottom_sheet: ^2.1.2
   shared_preferences: ^2.2.2
+  connectivity_plus: ^6.0.1
+  http: ^0.13.3
 
 dev_dependencies:
   flutter_test:

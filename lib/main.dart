@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 import 'constants.dart';
 import 'my_app_state.dart';
@@ -29,7 +32,6 @@ class MyApp extends StatelessWidget {
             bodyLarge: TextStyle(color: Colors.white, fontSize: 30.0),
             bodyMedium: TextStyle(color: Colors.white, fontSize: 30.0),
             bodySmall: TextStyle(color: Colors.white, fontSize: 25.0),
-            // Add other text styles if needed
           ),
           primarySwatch: Colors.blueGrey,
         ),
@@ -65,12 +67,17 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
     (index) => GlobalKey<CustomExpansionPanelState>(),
   );
   bool showingTutorial = false;
+  bool isTableExpanding = true;
+  bool showLocationCurrencyOption = false;
+  String locationCurrency = 'USD';
 
   @override
   void initState() {
     super.initState();
 
     _checkFirstRun();
+
+    _locationCheck();
 
     _dragController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 200));
@@ -86,6 +93,33 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
     });
   }
 
+  // uses a free endpoint - 45 requests per minute allowed
+  void _locationCheck() async {
+    try {
+      http.Response response =
+          await http.get(Uri.parse('http://ip-api.com/json'));
+      String currentLocationCurrency =
+          json.decode(response.body)['currency'].toString();
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (prefs.getString('currentLocationCurrency') !=
+          currentLocationCurrency) {
+        await prefs.setString(
+            'currentLocationCurrency', currentLocationCurrency);
+
+        if (currentLocationCurrency != prefs.getString('currency1') &&
+            currentLocationCurrency != prefs.getString('currency2')) {
+          setState(() {
+            showLocationCurrencyOption = true;
+            locationCurrency = currentLocationCurrency;
+          });
+        }
+      }
+    } catch (err) {
+      // Oh well - no location convenience for the user
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -97,14 +131,50 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
 
   void _checkFirstRun() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isFirstRun = prefs.getBool('firstRun') ?? true;
+    bool isFirstRun = prefs.getBool('isfirstRun') ?? true;
     if (isFirstRun) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showTutorialOverlay(context, trackTutorialStage);
       });
-      await prefs.setBool('firstRun', false);
+      await prefs.setBool('isfirstRun', false);
+
+      // requestLocationPermission();
     }
+    // else {
+    //   // check location
+    //   suggestCurrency();
+    // }
   }
+
+  // Future<void> requestLocationPermission() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //   if (!serviceEnabled) {
+  //     await prefs.setBool('locationEnabled', false);
+  //     return;
+  //   }
+
+  //   LocationPermission permission = await Geolocator.requestPermission();
+  //   if (permission == LocationPermission.denied ||
+  //       permission == LocationPermission.deniedForever) {
+  //     await prefs.setBool('locationEnabled', false);
+  //   } else {
+  //     await prefs.setBool('locationEnabled', true);
+  //   }
+  // }
+
+  // Future<void> suggestCurrency() async {
+  //   Position position = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high);
+  //
+  //   // the below doesn't actually work but it's the right idea
+  //   List<Placemark> placemarks =
+  //       await placemarkFromCoordinates(position.latitude, position.longitude);
+  //   Placemark place = placemarks[0];
+  //   String countryCode = place.isoCountryCode;
+  //   Currency currency = CurrencyPicker.getCurrencyByIsoCode(countryCode);
+  //   print('Suggested currency for ${place.country} is ${currency.name}');
+  // }
 
   @override
   void dispose() {
@@ -130,6 +200,9 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
       selected = value;
     });
     if (value != null) {
+      setState(() {
+        isTableExpanding = true;
+      });
       final panelHeight =
           (MediaQuery.of(context).size.height - bezelHeight) / 10.99;
       final offset = panelHeight * value + 3;
@@ -139,6 +212,9 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
         curve: Curves.elasticOut,
       );
       await Future.delayed(const Duration(milliseconds: 1700));
+      setState(() {
+        isTableExpanding = false;
+      });
     }
 
     setState(() {
@@ -349,6 +425,141 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
     tutorialOverlay?.remove();
   }
 
+  void displayLocationCurrencyOption(BuildContext context) {
+    if (showLocationCurrencyOption) {
+      setState(() {
+        showLocationCurrencyOption = false;
+      });
+      showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          var appState = context.watch<MyAppState>();
+          return AlertDialog(
+            title: Center(
+              child: RichText(
+                text: TextSpan(
+                  children: <TextSpan>[
+                    const TextSpan(
+                      text: 'Currency "',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorHeaderLeft,
+                        fontSize: 20.0,
+                      ),
+                    ),
+                    TextSpan(
+                      text: locationCurrency,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorTableRight,
+                        fontSize: 20.0,
+                      ), // Change color here
+                    ),
+                    const TextSpan(
+                      text: '" Detected for Your Location',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorHeaderLeft,
+                        fontSize: 20.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            content: const Text(
+              "Change a selected currency?",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colorHeaderRight, fontSize: 20.0),
+            ),
+            actions: <Widget>[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      const Expanded(
+                        flex: 1,
+                        child: SizedBox(),
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        flex: 1,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            side: const BorderSide(
+                                color: colorHeaderRight, width: 2),
+                          ),
+                          onPressed: () {
+                            appState.setCurrency1(locationCurrency);
+                            Navigator.of(context).pop();
+                            setState(() {
+                              showLocationCurrencyOption = false;
+                            });
+                          },
+                          child: Text(
+                            appState.currency1,
+                            style: const TextStyle(
+                              fontSize: 20.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        flex: 1,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            side: const BorderSide(
+                                color: colorHeaderRight, width: 2),
+                          ),
+                          onPressed: () {
+                            appState.setCurrency2(locationCurrency);
+                            Navigator.of(context).pop();
+                            setState(() {
+                              showLocationCurrencyOption = false;
+                            });
+                          },
+                          child: Text(
+                            appState.currency2,
+                            style: const TextStyle(
+                              fontSize: 20.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      const Expanded(
+                        flex: 1,
+                        child: SizedBox(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: 1 / 2,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        side:
+                            const BorderSide(color: colorHeaderRight, width: 2),
+                      ),
+                      child: const Text('No Thanks'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double bezelHeight = MediaQuery.of(context).padding.top +
@@ -373,6 +584,11 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
       appState.fetchExchangeRate();
     }
 
+    if (appState.conversionRate != 0 && showLocationCurrencyOption) {
+      Future.delayed(
+          Duration.zero, () => displayLocationCurrencyOption(context));
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -395,7 +611,7 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                if (appState.conversionRate == 0)
+                if (appState.conversionRate == 0) ...[
                   Row(
                     children: <Widget>[
                       Container(
@@ -413,8 +629,24 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                                 11,
                       ),
                     ],
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          CircularProgressIndicator(color: colorTableTextLeft),
+                          Text('Loading Exchange Rate...',
+                              style: TextStyle(color: colorTableTextLeft)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height:
+                        (MediaQuery.of(context).size.height - bezelHeight) / 11,
                   )
-                else ...[
+                ] else ...[
                   SizedBox(
                     height:
                         (MediaQuery.of(context).size.height - bezelHeight) / 11,
@@ -433,19 +665,25 @@ class _CurrencyConverterBaseState extends State<_CurrencyConverterBase>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
                             selected != null
-                                ? Container(
-                                    alignment: Alignment.centerLeft,
-                                    width: 40,
-                                    color: colorHeaderLeft,
-                                    child: IconButton(
-                                        icon: const Icon(Icons.arrow_back,
-                                            color: colorTableRight),
-                                        onPressed: () {
-                                          panelKeys[selected!]
-                                              .currentState
-                                              ?.handleTap();
-                                        }),
-                                  )
+                                ? !isTableExpanding
+                                    ? Container(
+                                        alignment: Alignment.centerLeft,
+                                        width: 40,
+                                        color: colorHeaderLeft,
+                                        child: IconButton(
+                                            icon: const Icon(Icons.arrow_back,
+                                                color: colorTableRight),
+                                            onPressed: () {
+                                              panelKeys[selected!]
+                                                  .currentState
+                                                  ?.handleTap();
+                                            }),
+                                      )
+                                    : Container(
+                                        alignment: Alignment.centerLeft,
+                                        width: 40,
+                                        color: colorHeaderLeft,
+                                      )
                                 : Container(
                                     alignment: Alignment.centerLeft,
                                     width: 40,
